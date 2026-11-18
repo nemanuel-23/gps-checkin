@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1E352A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GPS Check-In">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>GPS Bounty Check-In</title>
+<style>
+:root{
+  --bg:#FAF7F0; --card:#FFFFFF; --ink:#111A14; --ink2:#2E3A31; --line:#C9C1AE; --pine:#1E352A; --pine2:#2C4A3A;
+  --brass:#A9822F; --go:#1B6E35; --go-ink:#FFFFFF; --warn-bg:#FFF0BF; --warn-ink:#4A3300; --warn-line:#C68A00;
+  --bad:#A3161B; --bad-bg:#FDE7E7; --ok-bg:#E3F4E7; --focus:#0B57D0;
+  --fs:20px; --fs-big:24px; --fs-huge:34px; --btn:64px; --radius:12px;
+}
+body.outdoor{
+  --bg:#FFFFFF; --card:#FFFFFF; --ink:#000000; --ink2:#000000; --line:#000000; --pine:#000000; --pine2:#000000;
+  --go:#000000; --go-ink:#FFE500; --warn-bg:#FFE500; --warn-ink:#000000; --warn-line:#000000; --bad:#B00000; --bad-bg:#FFFFFF; --ok-bg:#FFFFFF;
+  --fs:23px; --fs-big:28px; --fs-huge:40px; --btn:72px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:var(--fs);line-height:1.35;
+  background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body.outdoor .card,body.outdoor .row,body.outdoor input,body.outdoor select,body.outdoor textarea{border-width:3px!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:4px solid var(--focus);outline-offset:2px}
+.wrap{max-width:860px;margin:0 auto;padding:12px 14px calc(110px + env(safe-area-inset-bottom))}
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:var(--pine);color:#fff;display:flex;align-items:center;gap:8px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top));min-height:58px}
+.top .brand{font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:19px;line-height:1.1;flex:1;min-width:0}
+.top .brand small{display:block;font-family:inherit;font-size:13px;font-weight:600;opacity:.9;letter-spacing:.04em}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 12px;font-size:15px;font-weight:800;white-space:nowrap;border:2px solid transparent}
+.pill.on{background:#DDF3E3;color:#0D3B1C}.pill.off{background:#FFE1E1;color:#7A0C10}.pill.pend{background:#FFE58A;color:#3D2A00}
+body.outdoor .pill{border-color:#000}
+.iconbtn{min-width:48px;height:48px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:22px;font-weight:800}
+body.outdoor .iconbtn{background:#FFE500;color:#000}
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:3px solid var(--pine);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom)}
+.nav button{min-height:68px;font-size:15px;font-weight:900;letter-spacing:.02em;line-height:1.1;color:var(--ink);padding:6px 4px;text-transform:uppercase}
+.nav button.act{background:var(--pine);color:#fff}
+body.outdoor .nav button.act{background:#000;color:#FFE500}
+/* generic */
+h1{font-size:var(--fs-big);font-weight:900;letter-spacing:.01em}
+h2{font-size:var(--fs-big);font-weight:900;margin:6px 0 10px;text-transform:uppercase;letter-spacing:.02em}
+.lbl{display:block;font-size:16px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin:0 0 6px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:var(--radius);padding:14px}
+.stack>*+*{margin-top:12px}
+.muted{color:var(--ink2);font-size:17px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:var(--btn);border-radius:var(--radius);font-weight:900;font-size:var(--fs);
+  letter-spacing:.03em;text-transform:uppercase;padding:10px 16px;border:3px solid var(--pine);background:var(--card);color:var(--pine);text-align:center}
+.btn.primary{background:var(--pine);color:#fff}
+.btn.go{background:var(--go);border-color:var(--go);color:var(--go-ink)}
+.btn.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn.warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-ink)}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.btn.sm{min-height:52px;font-size:17px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+input.big,select.big,textarea.big{width:100%;min-height:64px;border:2px solid var(--ink2);border-radius:var(--radius);padding:10px 14px;font-size:var(--fs-big);background:#fff;color:#000}
+textarea.big{min-height:96px;font-size:var(--fs)}
+.field{margin-bottom:14px}
+.banner{border-radius:var(--radius);padding:12px 14px;font-weight:800;border:3px solid}
+.banner.warn{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-line)}
+.banner.bad{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}
+.banner.ok{background:var(--ok-bg);color:#0D3B1C;border-color:var(--go)}
+.banner b{font-weight:900}
+/* search */
+.searchbox{position:relative}
+.searchbox input{padding-right:70px;font-size:26px;min-height:70px;border-width:3px;border-color:var(--pine)}
+.searchbox .clear{position:absolute;right:6px;top:6px;width:58px;height:58px;border-radius:10px;background:var(--pine);color:#fff;font-size:26px;font-weight:900}
+.result{display:block;width:100%;text-align:left;background:var(--card);border:2px solid var(--line);border-radius:var(--radius);padding:14px 16px;min-height:76px}
+.result+.result{margin-top:10px}
+.result:active{background:#EEF4EF}
+.result .nm{font-size:var(--fs-big);font-weight:900;line-height:1.15;display:flex;justify-content:space-between;gap:10px}
+.result .nm .id{font-size:15px;font-weight:800;color:var(--ink2);white-space:nowrap;padding-top:4px}
+.result .ln{font-size:18px;color:var(--ink2);margin-top:3px}
+.tag{display:inline-block;border-radius:8px;padding:2px 8px;font-size:15px;font-weight:900;margin:6px 6px 0 0;border:2px solid}
+.tag.ret{background:#E5EEF9;color:#0B2E5C;border-color:#5D7FAF}
+.tag.today{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-line)}
+.tag.new{background:#F1E6FA;color:#3E1460;border-color:#8A5DB0}
+body.outdoor .tag{background:#fff;color:#000;border-color:#000}
+.nomatch{text-align:center;padding:18px 8px}
+.nomatch .big{font-size:var(--fs-huge);font-weight:900;color:var(--bad)}
+/* entry */
+.who{background:var(--pine);color:#fff;border-radius:var(--radius);padding:12px 16px}
+.who .lbl{color:#E8DDBF;margin:0}
+.who .nm{font-size:30px;font-weight:900;line-height:1.1;margin-top:2px}
+body.outdoor .who{background:#000}
+body.outdoor .who .lbl{color:#FFE500}
+.who .ln{font-size:18px;margin-top:4px;opacity:.95}
+.who,.card,.banner,.result{overflow-wrap:break-word}
+input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.species{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:720px){.species{grid-template-columns:1fr 1fr}}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 64px 74px 64px;gap:6px;align-items:center;background:var(--card);border:2px solid var(--line);border-radius:var(--radius);padding:8px 8px 8px 14px}
+.row.has{border-color:var(--go);background:var(--ok-bg)}
+body.outdoor .row.has{background:#FFE500}
+.row .sp{font-size:clamp(19px,5.8vw,24px);font-weight:900;line-height:1.1;overflow-wrap:break-word;min-width:0}
+.row .qb{height:64px;border-radius:10px;background:var(--pine);color:#fff;font-size:38px;font-weight:900;line-height:1}
+.row .qb.minus{background:#fff;color:var(--pine);border:3px solid var(--pine)}
+.row input{height:64px;width:100%;text-align:center;font-size:var(--fs-huge);font-weight:900;border:3px solid var(--ink2);border-radius:10px;background:#fff;color:#000;padding:0}
+body.outdoor .row{grid-template-columns:minmax(0,1fr) 64px 76px 64px;padding-left:10px}
+body.outdoor .row .sp{font-size:clamp(19px,5.8vw,26px)}
+body.outdoor .row .qb,body.outdoor .row input{height:72px}
+.sum{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:baseline}
+.sum .k{font-weight:900;font-size:18px;letter-spacing:.04em;text-transform:uppercase}
+.sum .v{font-weight:900;font-size:var(--fs-big);text-align:right}
+.sum .v.huge{font-size:var(--fs-huge)}
+.actionbar{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--card);border-top:3px solid var(--pine);padding:10px 12px calc(10px + env(safe-area-inset-bottom))}
+.actionbar .inner{max-width:860px;margin:0 auto}
+.actionbar .tot{display:flex;justify-content:space-between;font-weight:900;font-size:var(--fs-big);margin-bottom:8px}
+.actionbar .btns{display:grid;grid-template-columns:1fr 1.6fr;gap:10px}
+/* modal */
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:94vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+@media (min-width:700px){.modal{align-items:center}.sheet{border-radius:18px}}
+.conf{width:100%;border-collapse:collapse;margin:8px 0}
+.conf td{padding:8px 4px;border-bottom:2px solid var(--line);font-size:var(--fs)}
+.conf td:last-child{text-align:right;font-weight:900;font-size:var(--fs-big)}
+.conf tr.z td{font-weight:500}
+.conf tr.z td:last-child{font-weight:600;font-size:var(--fs)}
+/* success */
+.success{background:var(--go);color:var(--go-ink);border-radius:18px;padding:22px 18px;text-align:center}
+.success.pending{background:#8A5A00;color:#fff}
+body.outdoor .success.pending{background:#000;color:#FFE500}
+.success .ck{font-size:64px;line-height:1;font-weight:900}
+.success .t{font-size:var(--fs-huge);font-weight:900;letter-spacing:.03em}
+.success .nm{font-size:28px;font-weight:900;margin-top:6px}
+.success .amt{font-size:var(--fs-huge);font-weight:900;margin-top:6px}
+.success .sync{margin-top:10px;font-weight:800;font-size:19px;background:rgba(255,255,255,.18);border-radius:10px;padding:8px}
+/* tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--card);border:2px solid var(--line);border-radius:var(--radius);padding:12px;text-align:center}
+.tile .n{font-size:40px;font-weight:900;line-height:1.1}
+.tile .k{font-size:15px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.list{width:100%;border-collapse:collapse}
+.list td,.list th{padding:10px 6px;border-bottom:2px solid var(--line);text-align:left;font-size:18px;vertical-align:top}
+.list th{font-size:14px;text-transform:uppercase;letter-spacing:.06em}
+.list td.r,.list th.r{text-align:right}
+.sync-ok{color:var(--go);font-weight:900}.sync-pend{color:#8A5A00;font-weight:900}.sync-bad{color:var(--bad);font-weight:900}
+body.outdoor .sync-ok,body.outdoor .sync-pend{color:#000}
+.adminmenu .btn{justify-content:space-between;text-transform:none;font-size:var(--fs);letter-spacing:0}
+.hide{display:none!important}
+.center{text-align:center}
+.login{max-width:520px;margin:24px auto}
+.login .logo{font-family:Georgia,serif;color:var(--pine);font-size:32px;font-weight:700;text-align:center;line-height:1.1}
+.login .sub{text-align:center;font-weight:800;color:var(--ink2);margin:6px 0 18px}
+.demo{background:#3E1460;color:#fff;padding:8px 12px;font-size:15px;font-weight:700;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo button{background:#fff;color:#3E1460;border-radius:8px;padding:6px 10px;font-weight:900;font-size:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(66px + env(safe-area-inset-top));z-index:60;background:#111;color:#fff;padding:12px 18px;border-radius:12px;font-weight:800;max-width:92vw}
+.small{font-size:16px}
+/* search row + keyboard-open mode: keep the results in view above the phone keyboard */
+.searchrow{display:grid;grid-template-columns:1fr 70px;gap:8px}
+.scanbtn{height:70px;border-radius:var(--radius);background:var(--pine);color:#fff;font-size:15px;font-weight:900;line-height:1.05;border:3px solid var(--pine)}
+body.outdoor .scanbtn{background:#000;color:#FFE500}
+body.kb .top,body.kb #demo,body.kb .lookuplbl,body.kb .hint,body.kb .scanbtn,body.kb .nav,body.kb .toast{display:none!important}
+body.kb .searchrow{grid-template-columns:1fr}
+body.kb .wrap{padding-top:6px}
+body.kb .result{padding:10px 14px;min-height:0}
+body.kb .result .ln.extra,body.kb .result .tag{display:none}
+#results{min-height:75vh}
+.count{font-size:16px;font-weight:800;color:var(--ink2);margin:8px 2px}
+/* scanner */
+.scanbox{position:relative;background:#000;border-radius:14px;overflow:hidden;aspect-ratio:1/1;max-height:60vh;margin:10px auto}
+.scanbox video{width:100%;height:100%;object-fit:cover}
+.scanbox .frame{position:absolute;inset:18%;border:4px solid #FFE500;border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+/* summary tabs */
+.seg{display:grid;grid-template-columns:1fr 1fr;border:3px solid var(--pine);border-radius:var(--radius);overflow:hidden}
+.seg button{min-height:56px;font-weight:900;font-size:18px;letter-spacing:.04em;color:var(--pine);background:var(--card)}
+.seg button.on{background:var(--pine);color:#fff}
+body.outdoor .seg button.on{background:#000;color:#FFE500}
+.bar{height:14px;background:#E4DECE;border-radius:8px;overflow:hidden;margin-top:6px}
+.bar span{display:block;height:100%;background:var(--go)}
+.tile.big{grid-column:1/-1}
+.success.saving{background:#1E4F7A;color:#fff}
+.success.failed{background:var(--bad);color:#fff}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.qrimg{display:block;margin:10px auto;width:240px;height:240px;image-rendering:pixelated;background:#fff;padding:8px;border-radius:10px}
+</style>
+</head>
+<body>
+<div id="demo" class="demo hide"></div>
+<header class="top" id="top">
+  <div class="brand">GPS Predator Bounty<small id="subtitle">CHECK-IN</small></div>
+  <span id="syncpill" class="pill on">● ONLINE</span>
+  <button class="iconbtn" data-act="outdoor" aria-label="Toggle high-contrast outdoor mode" title="Outdoor mode">☀</button>
+</header>
+<main class="wrap" id="main"></main>
+<nav class="nav hide" id="nav">
+  <button data-act="go" data-view="checkin">Check In</button>
+  <button data-act="go" data-view="daily">Summary</button>
+  <button data-act="go" data-view="admin">Admin</button>
+  <button data-act="logout">Log Out</button>
+</nav>
+<div id="modal"></div>
+<div id="toast" class="toast hide" role="status" aria-live="polite"></div>
+
+<script src="config.js"></script>
+<script>
+/* Standalone (PWA) hosting: paste the Apps Script web-app URL here. Leave blank when served by Apps Script. */
+window.GPS_CONFIG = window.GPS_CONFIG || { apiUrl: '' };
+</script>
+<script>
+(function () {
+'use strict';
+
+/* ---------------- storage (never throws) ---------------- */
+var store = {
+  get: function (k, d) { try { var v = localStorage.getItem('gps.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: function (k, v) { try { localStorage.setItem('gps.' + k, JSON.stringify(v)); } catch (e) {} },
+  del: function (k) { try { localStorage.removeItem('gps.' + k); } catch (e) {} }
+};
+function rid(n) { var a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', s = ''; var r = (window.crypto && crypto.getRandomValues) ? crypto.getRandomValues(new Uint8Array(n)) : null; for (var i = 0; i < n; i++) s += a[(r ? r[i] : Math.floor(Math.random() * 256)) % a.length]; return s; }
+
+/* ---------------- state ---------------- */
+var S = {
+  token: store.get('token', ''), role: store.get('role', ''), dev: store.get('dev', '') || ('D' + rid(10)),
+  vol: store.get('vol', ''), outdoor: store.get('outdoor', false),
+  cache: store.get('cache', null), queue: store.get('queue', []), recent: store.get('recent', []),
+  view: 'checkin', sel: null, qty: {}, txnId: '', resolution: null, q: '', online: navigator.onLine, busy: false, saving: {}, sumTab: 'today', pendingCode: '',
+  daily: null, adminView: '', lastActivity: Date.now(), syncing: false
+};
+store.set('dev', S.dev);
+if (S.outdoor) document.body.classList.add('outdoor');
+
+/* ---------------- transport ---------------- */
+var MODE = window.GPS_DEMO ? 'demo' : (window.google && google.script && google.script.run) ? 'gas' : 'fetch';
+function call(req) {
+  req.deviceId = S.dev;
+  if (S.token && !req.token) req.token = S.token;
+  if (MODE === 'demo') return window.GPS_DEMO.call(req);
+  if (MODE === 'gas') return new Promise(function (res, rej) {
+    google.script.run.withSuccessHandler(function (s) { try { res(JSON.parse(s)); } catch (e) { rej({ network: true }); } })
+      .withFailureHandler(function (e) { rej({ network: true, message: String(e && e.message || e) }); }).api(JSON.stringify(req));
+  });
+  var url = window.GPS_CONFIG.apiUrl;
+  if (!url) return Promise.reject({ network: true, message: 'App is not connected (missing API URL).' });
+  var ctl = window.AbortController ? new AbortController() : null;
+  var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 25000);
+  return fetch(url, { method: 'POST', body: JSON.stringify(req), redirect: 'follow', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(timer); return r.json(); })
+    .catch(function (e) { clearTimeout(timer); throw { network: true, message: String(e && e.message || e) }; });
+}
+
+/* ---------------- helpers ---------------- */
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function money(n) { n = Number(n) || 0; return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+function $(id) { return document.getElementById(id); }
+function norm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+function settings() { return (S.cache && S.cache.settings) || { species: [], rate: 5, householdMax: 0, limitScope: 'Household', towns: {} }; }
+function roster() { return (S.cache && S.cache.roster) || []; }
+function todayKey() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function shortDate(k) { if (!k) return ''; var p = String(k).split('-'); return p.length === 3 ? (+p[1]) + '/' + (+p[2]) : k; }
+function timeNow() { return new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+function toast(msg, ms) { var t = $('toast'); t.textContent = msg; t.classList.remove('hide'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.add('hide'); }, ms || 3500); }
+function saveCache() { store.set('cache', S.cache); }
+function saveQueue() { store.set('queue', S.queue); renderPill(); }
+function pending() { return S.queue.filter(function (q) { return q.status !== 'failed'; }); }
+function failed() { return S.queue.filter(function (q) { return q.status === 'failed'; }); }
+function findP(id) { var r = roster(); for (var i = 0; i < r.length; i++) if (r[i].id === id) return r[i]; return null; }
+function totalQty(q) { var t = 0; for (var k in q) t += Number(q[k]) || 0; return t; }
+
+/* ---------------- sync pill ---------------- */
+function renderPill() {
+  var p = $('syncpill'), n = pending().length + Object.keys(S.saving || {}).length, f = failed().length;
+  if (f) { p.className = 'pill off'; p.textContent = '⚠ ' + f + ' NEEDS ATTENTION'; }
+  else if (n) { p.className = 'pill pend'; p.textContent = '↻ ' + n + ' PENDING SYNC'; }
+  else if (!S.online) { p.className = 'pill off'; p.textContent = '● OFFLINE'; }
+  else { p.className = 'pill on'; p.textContent = '● ONLINE'; }
+}
+
+/* ---------------- views ---------------- */
+function setView(v) {
+  S.view = v; S.adminView = v === 'admin' ? S.adminView : '';
+  var nav = $('nav');
+  nav.classList.toggle('hide', !S.token || v === 'entry' || v === 'success' || v === 'add');
+  Array.prototype.forEach.call(nav.querySelectorAll('[data-view]'), function (b) { b.classList.toggle('act', b.getAttribute('data-view') === v || (v === 'entry' && b.getAttribute('data-view') === 'checkin')); });
+  render();
+  window.scrollTo(0, 0);
+}
+
+function render() {
+  renderPill();
+  var m = $('main');
+  if (!S.token) { m.innerHTML = loginHtml(); var pw = $('pw'); if (pw) pw.focus(); return; }
+  $('subtitle').textContent = 'CHECK-IN' + (S.role === 'admin' ? ' · ADMIN' : '') + (S.vol ? ' · ' + S.vol.toUpperCase() : '');
+  if (S.view === 'checkin') { m.innerHTML = lookupHtml(); renderResults(); }
+  else if (S.view === 'entry') { m.innerHTML = entryHtml(); updateTotals(); }
+  else if (S.view === 'success') { m.innerHTML = successHtml(); }
+  else if (S.view === 'add') { m.innerHTML = addHtml(); var f = $('a_first'); if (f) f.focus(); }
+  else if (S.view === 'daily') { m.innerHTML = dailyHtml(); }
+  else if (S.view === 'admin') { m.innerHTML = adminHtml(); }
+}
+
+/* ---------- login ---------- */
+function loginHtml() {
+  return '<div class="login stack">' +
+    '<div class="logo">Grand Passage Sportsmen</div><div class="sub">PREDATOR BOUNTY CHECK-IN</div>' +
+    '<form class="card stack" id="loginform" autocomplete="off">' +
+    '<div><label class="lbl" for="pw">Check-in password</label><input class="big" id="pw" type="password" autocomplete="current-password" enterkeyhint="go"></div>' +
+    '<div><label class="lbl" for="volname">Your name (optional)</label><input class="big" id="volname" type="text" autocomplete="name" value="' + esc(S.vol) + '"></div>' +
+    '<div id="loginerr"></div>' +
+    '<button class="btn go" type="submit" id="loginbtn">Enter</button></form>' +
+    (pending().length ? '<div class="banner warn">' + pending().length + ' check-in(s) saved on this phone will upload after you log in.</div>' : '') +
+    '<p class="muted center">Ask the event lead for the password. Tap ☀ for outdoor high-contrast mode.</p></div>';
+}
+
+function doLogin(e) {
+  e.preventDefault();
+  var pw = $('pw').value, vol = $('volname').value.trim().slice(0, 40);
+  if (!pw) return;
+  var b = $('loginbtn'); b.disabled = true; b.textContent = 'Checking…';
+  call({ action: 'login', password: pw, volunteer: vol }).then(function (r) {
+    if (!r.ok) { $('loginerr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; b.disabled = false; b.textContent = 'Enter'; $('pw').select(); return; }
+    S.token = r.token; S.role = r.role; S.vol = vol;
+    store.set('token', S.token); store.set('role', S.role); store.set('vol', vol);
+    bootstrap(true).then(function () { if (S.view !== 'entry') setView('checkin'); processQueue(); }); // a scanned QR link may have opened a participant
+  }).catch(function () {
+    $('loginerr').innerHTML = '<div class="banner bad">No connection. Find a signal and try again.</div>'; b.disabled = false; b.textContent = 'Enter';
+  });
+}
+
+function bootstrap(force) {
+  return call({ action: 'bootstrap' }).then(function (r) {
+    if (r.code === 'AUTH') return authLost();
+    if (!r.ok) { toast(r.error || 'Could not load participants'); return; }
+    S.role = r.role; store.set('role', S.role);
+    S.cache = { roster: r.roster, settings: r.settings, program: r.program, today: r.today, at: Date.now() };
+    saveCache(); S.online = true;
+    tryPendingCode();
+    if (S.view === 'checkin' && !force) renderResults();
+  }).catch(function () { S.online = false; renderPill(); });
+}
+
+function authLost() {
+  S.token = ''; store.del('token'); S.role = '';
+  toast('Session ended — please enter the password again.', 5000);
+  setView('checkin');
+}
+
+function logout() {
+  var n = pending().length;
+  var go = function () {
+    if (S.token) call({ action: 'logout' }).catch(function () {});
+    S.token = ''; S.role = ''; S.cache = null; S.sel = null; S.qty = {};
+    ['token', 'role', 'cache', 'draft', 'recent'].forEach(store.del);
+    closeModal(); setView('checkin');
+  };
+  if (n) confirmBox('Log out?', n + ' check-in(s) have not uploaded yet. They stay saved on this phone and upload the next time someone logs in here. Better: stay logged in until the pill says ONLINE.', 'Log out anyway', go, 'bad');
+  else go();
+}
+
+/* ---------- lookup ---------- */
+function lookupHtml() {
+  var stale = S.cache && !S.online ? '<div class="banner warn">No signal — searching the roster saved on this phone. Check-ins will save here and upload later.</div>' : '';
+  return '<div class="stack">' + stale +
+    '<div><label class="lbl lookuplbl" for="q">Search participant name</label>' +
+    '<div class="searchrow"><div class="searchbox"><input class="big" id="q" type="search" inputmode="search" enterkeyhint="search" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="First, last, or parent name" value="' + esc(S.q) + '">' +
+    '<button class="clear" data-act="clearq" aria-label="Clear search">✕</button></div>' +
+    '<button class="scanbtn" data-act="scan" aria-label="Scan QR code">📷<br>SCAN</button></div></div>' +
+    '<div id="results"></div></div>';
+}
+
+function scoreP(p, toks, qn) {
+  var nameT = norm(p.name).split(' '), parT = norm(p.parent).split(' '), id = norm(p.id);
+  var s = 0, nameHits = 0;
+  for (var i = 0; i < toks.length; i++) {
+    var t = toks[i], hit = 0;
+    for (var j = 0; j < nameT.length; j++) if (nameT[j].indexOf(t) === 0) { hit = j === nameT.length - 1 ? 3 : 4; break; }
+    if (!hit && norm(p.name).replace(/ /g, '').indexOf(t) >= 0) hit = 2;
+    if (hit) nameHits++;
+    if (!hit) for (var k = 0; k < parT.length; k++) if (parT[k] && parT[k].indexOf(t) === 0) { hit = 1; break; }
+    if (!hit && id.replace(/ /g, '').indexOf(t) >= 0) hit = 2;
+    if (!hit) return 0;
+    s += hit;
+  }
+  if (norm(p.name) === qn) s += 10;
+  if (nameHits === toks.length) s += 3;
+  return s;
+}
+
+function search(q) {
+  var qn = norm(q);
+  if (!qn) return [];
+  var toks = qn.split(' ');
+  var out = [];
+  roster().forEach(function (p) { var s = scoreP(p, toks, qn); if (s) out.push({ p: p, s: s }); });
+  out.sort(function (a, b) { return b.s - a.s || a.p.name.localeCompare(b.p.name); });
+  return out.slice(0, 30).map(function (x) { return x.p; });
+}
+
+function cardHtml(p, act) {
+  var bits = [];
+  if (p.age !== '' && p.age != null) bits.push('Age ' + esc(p.age));
+  if (p.ya) bits.push(esc(p.ya));
+  var place = p.city ? esc(p.city) + (p.county ? ' (' + esc(p.county) + ')' : '') : (p.county ? esc(p.county) + ' County' : '');
+  if (place) bits.push(place);
+  var tags = '';
+  if (p.today) tags += '<span class="tag today">CHECKED IN TODAY ' + esc(p.todayTime || '') + '</span>';
+  if (p.n) tags += '<span class="tag ret">' + p.n + ' check-in' + (p.n > 1 ? 's' : '') + ' · ' + p.animals + ' animal' + (p.animals === 1 ? '' : 's') + ' · last ' + esc(shortDate(p.lastDate)) + '</span>';
+  if (p.local) tags += '<span class="tag new">ADDED ON THIS PHONE</span>';
+  else if (p.addedAtCheckin) tags += '<span class="tag new">ADDED AT CHECK-IN</span>';
+  return '<button class="result" data-act="' + (act || 'pick') + '" data-id="' + esc(p.id) + '">' +
+    '<div class="nm"><span>' + esc(p.name) + '</span><span class="id">' + esc(/^C-/.test(p.id) ? 'NEW' : p.id) + '</span></div>' +
+    (bits.length ? '<div class="ln">' + bits.join(' · ') + '</div>' : '') +
+    (p.parent ? '<div class="ln extra">Parent: <b>' + esc(p.parent) + '</b></div>' : '') + tags + '</button>';
+}
+
+function renderResults() {
+  var el = $('results'); if (!el) return;
+  if (!S.cache) { el.innerHTML = '<div class="banner warn">Loading participants…</div>'; return; }
+  var q = S.q.trim();
+  if (!q) {
+    el.innerHTML = '<p class="muted hint">Type 2–3 letters of the youth\'s first or last name — or the parent\'s name — or tap 📷 SCAN for a QR code.</p>' +
+      '<div style="margin-top:14px"><button class="btn" data-act="add">+ Add new participant</button></div>' + recentHtml();
+    return;
+  }
+  var list = search(q);
+  if (!list.length) {
+    el.innerHTML = '<div class="card nomatch stack"><div class="big">NO MATCHES FOUND</div><div class="muted">Check spelling, try the last name only, or search the parent\'s name.</div>' +
+      '<button class="btn go" data-act="add">+ Add new participant</button><button class="btn" data-act="clearq">Clear search</button></div>';
+    return;
+  }
+  el.innerHTML = '<div class="count">' + list.length + ' match' + (list.length === 1 ? '' : 'es') + ' · tap a name' + (document.body.classList.contains('kb') ? ' · ⏎ hides keyboard' : '') + '</div>' +
+    list.map(function (p) { return cardHtml(p); }).join('') +
+    '<div style="margin-top:14px"><button class="btn" data-act="add">+ Not listed? Add new participant</button></div>';
+}
+
+function recentHtml() {
+  var t = todayKey();
+  var r = S.recent.filter(function (x) { return x.date === t; }).slice(0, 5);
+  if (!r.length) return '';
+  return '<h2 style="margin-top:22px">Just checked in (this phone)</h2>' + '<table class="list"><tbody>' + r.map(function (x) {
+    return '<tr><td>' + esc(x.time) + '</td><td><b>' + esc(x.name) + '</b></td><td class="r">' + x.total + '</td><td class="r">' + money(x.amount) + '</td><td class="r">' + syncLabel(x) + '</td></tr>';
+  }).join('') + '</tbody></table>';
+}
+
+function syncLabel(x) {
+  if (S.saving[x.id]) return '<span class="sync-pend">… SAVING</span>';
+  var q = S.queue.filter(function (i) { return i.id === x.id; })[0];
+  if (q && q.status === 'failed') return '<span class="sync-bad">⚠ FAILED</span>';
+  if (q) return '<span class="sync-pend">↻ PENDING</span>';
+  return '<span class="sync-ok">✓ SYNCED</span>';
+}
+
+/* ---------- entry ---------- */
+function pick(id) {
+  var p = findP(id); if (!p) return;
+  var draft = store.get('draft', null);
+  S.sel = p; S.qty = (draft && draft.pid === id) ? draft.qty : {}; S.txnId = (draft && draft.pid === id && draft.txnId) || ''; S.resolution = null;
+  setView('entry');
+}
+
+function limitState(p, earned) {
+  var st = settings(); var max = Number(st.householdMax) || 0;
+  if (!max || !p) return null;
+  var used = Number(p.limitPaid) || 0;
+  var participantScope = /^p/i.test(st.limitScope || '');
+  pending().forEach(function (q) {
+    if (q.kind !== 'checkin') return;
+    var qp = findP(q.txn.pid);
+    if (participantScope ? q.txn.pid === p.id : (qp && qp.hh === p.hh)) used += q.paid || 0;
+  });
+  return { max: max, used: used, remaining: Math.max(0, max - used), earned: earned, over: used + earned > max, scope: participantScope ? 'participant' : 'household' };
+}
+
+function entryHtml() {
+  var p = S.sel, st = settings();
+  var bits = [];
+  if (p.age !== '' && p.age != null) bits.push('Age ' + esc(p.age));
+  if (p.city) bits.push(esc(p.city) + (p.county ? ' (' + esc(p.county) + ')' : ''));
+  if (p.parent) bits.push('Parent: ' + esc(p.parent));
+  var hist = p.n ? '<div class="ln">Returning: <b>' + p.n + '</b> check-in' + (p.n > 1 ? 's' : '') + ' · <b>' + p.animals + '</b> animal' + (p.animals === 1 ? '' : 's') + ' · last ' + esc(shortDate(p.lastDate)) + '</div>' : '<div class="ln">First check-in this season</div>';
+  var warn = '';
+  if (p.today) warn += '<div class="banner warn">Already checked in <b>today</b>' + (p.todayTime ? ' at ' + esc(p.todayTime) : '') + ' (' + p.todayAnimals + ' animals). Only save again if this is a new batch — it will be flagged for review.</div>';
+  var rows = st.species.map(function (sp, i) {
+    var v = Number(S.qty[sp]) || 0;
+    return '<div class="row' + (v ? ' has' : '') + '" id="row_' + i + '"><div class="sp">' + esc(sp) + '</div>' +
+      '<button class="qb minus" data-act="dec" data-sp="' + esc(sp) + '" aria-label="One fewer ' + esc(sp) + '">−</button>' +
+      '<input id="qty_' + i + '" data-sp="' + esc(sp) + '" class="qty" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" aria-label="' + esc(sp) + ' quantity" value="' + v + '">' +
+      '<button class="qb" data-act="inc" data-sp="' + esc(sp) + '" aria-label="One more ' + esc(sp) + '">+</button></div>';
+  }).join('');
+  return '<div class="stack">' +
+    '<div class="who"><span class="lbl">Participant name</span><div class="nm">' + esc(p.name) + '</div>' +
+    (bits.length ? '<div class="ln">' + bits.join(' · ') + '</div>' : '') + hist + '<div class="ln" id="hhline"></div></div>' +
+    warn + '<div class="species">' + rows + '</div>' +
+    '<div class="card sum"><span class="k">Total animals submitted</span><span class="v huge" id="s_total">0</span>' +
+    '<span class="k">Bounty rate</span><span class="v">' + money(st.rate) + ' per animal</span>' +
+    '<span class="k">Total bounty</span><span class="v huge" id="s_bounty">$0.00</span></div>' +
+    '<div id="limitbox"></div>' +
+    '<div class="actionbar"><div class="inner"><div class="tot"><span id="b_total">0 animals</span><span id="b_bounty">$0.00</span></div>' +
+    '<div class="btns"><button class="btn" data-act="back">Cancel / Back</button><button class="btn go" id="savebtn" data-act="save">Save check-in</button></div></div></div></div>';
+}
+
+function updateTotals() {
+  if (!S.sel) return;
+  var st = settings(), total = totalQty(S.qty), earned = total * st.rate;
+  $('s_total').textContent = total; $('s_bounty').textContent = money(earned);
+  $('b_total').textContent = total + ' animal' + (total === 1 ? '' : 's'); $('b_bounty').textContent = money(earned);
+  st.species.forEach(function (sp, i) { var r = $('row_' + i); if (r) r.classList.toggle('has', (Number(S.qty[sp]) || 0) > 0); });
+  var L = limitState(S.sel, earned), hh = $('hhline'), box = $('limitbox');
+  if (L) {
+    var who = L.scope === 'household' ? 'Household' + (S.sel.hhSize > 1 ? ' (' + S.sel.hhSize + ' youth)' : '') : 'Participant';
+    hh.innerHTML = who + ': <b>' + money(L.used) + '</b> of ' + money(L.max) + ' paid · <b>' + money(L.remaining) + '</b> left';
+  } else hh.innerHTML = '';
+  if (L && L.over && total > 0) {
+    var payable = L.remaining;
+    box.innerHTML = '<div class="banner bad stack"><div><b>' + (L.scope === 'household' ? 'HOUSEHOLD' : 'PARTICIPANT') + ' LIMIT:</b> ' + money(L.max) + '. Already paid ' + money(L.used) +
+      '. This check-in (' + money(earned) + ') goes over by <b>' + money(L.used + earned - L.max) + '</b>.</div>' +
+      '<div>Choose one before saving:</div>' +
+      '<button class="btn warn" data-act="resolve" data-type="partial">Record all animals · pay ' + money(payable) + '</button>' +
+      '<button class="btn" data-act="resolve" data-type="override">Admin override · pay full ' + money(earned) + '</button>' +
+      '<div class="small">Or lower the counts above. Animal counts are never changed automatically.</div></div>' +
+      (S.resolution ? '<div class="banner ok" style="margin-top:10px">Selected: <b>' + (S.resolution.type === 'partial' ? 'Pay ' + money(payable) + ' (limit reached)' : 'Admin override — pay ' + money(earned)) + '</b></div>' : '');
+    if (S.resolution && S.resolution.type === 'partial') S.resolution.amount = payable;
+  } else { box.innerHTML = ''; if (S.resolution) S.resolution = null; }
+  store.set('draft', { pid: S.sel.id, qty: S.qty, txnId: S.txnId });
+}
+
+function setQty(sp, v) {
+  v = Math.max(0, Math.min(999, Math.floor(Number(v) || 0)));
+  S.qty[sp] = v; S.txnId = '';
+  var i = settings().species.indexOf(sp), inp = $('qty_' + i);
+  if (inp && document.activeElement !== inp) inp.value = v;
+  updateTotals();
+}
+
+function startSave() {
+  var total = totalQty(S.qty);
+  if (total <= 0) { toast('Enter at least one animal first.'); return; }
+  var st = settings(), earned = total * st.rate, L = limitState(S.sel, earned);
+  if (L && L.over && !S.resolution) { toast('Choose how to handle the payout limit first.'); $('limitbox').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  if (!S.txnId) S.txnId = 'T-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + rid(8);
+  store.set('draft', { pid: S.sel.id, qty: S.qty, txnId: S.txnId });
+  var paid = S.resolution && S.resolution.type === 'partial' ? S.resolution.amount : earned;
+  var rows = st.species.map(function (sp) { var v = Number(S.qty[sp]) || 0; return '<tr class="' + (v ? '' : 'z') + '"><td>' + esc(sp) + '</td><td>' + v + '</td></tr>'; }).join('');
+  openModal('<h2>Confirm check-in</h2><div class="card"><span class="lbl">Participant</span><div style="font-size:28px;font-weight:900">' + esc(S.sel.name) + '</div></div>' +
+    '<table class="conf"><tbody>' + rows + '</tbody></table>' +
+    '<div class="card sum"><span class="k">Total animals</span><span class="v huge">' + total + '</span><span class="k">Total bounty</span><span class="v huge">' + money(paid) + '</span>' +
+    (paid !== earned ? '<span class="k">Earned (before limit)</span><span class="v">' + money(earned) + '</span>' : '') + '</div>' +
+    '<div id="conferr"></div><div class="stack" style="margin-top:12px"><button class="btn go" id="confbtn" data-act="confirm">Confirm &amp; save</button><button class="btn" data-act="closemodal">Go back / edit</button></div>');
+}
+
+/* The volunteer sees the result screen right away while the save finishes in the background.
+   It says "Saving…" until Google Sheets confirms, then "Synced" — or turns red if the save is refused. */
+function confirmSave() {
+  if (S.busy) return;
+  S.busy = true;
+  var b = $('confbtn'); if (b) { b.disabled = true; b.textContent = 'Saving…'; }
+  var st = settings(), total = totalQty(S.qty), earned = total * st.rate;
+  var qty = {}; st.species.forEach(function (sp) { if (Number(S.qty[sp])) qty[sp] = Number(S.qty[sp]); });
+  var res = S.resolution ? { type: S.resolution.type, reason: S.resolution.reason || '', adminPassword: S.resolution.adminPassword || '' } : null;
+  var txn = { id: S.txnId, pid: S.sel.id, qty: qty, created: new Date().toISOString(), dev: S.dev, vol: S.vol, resolution: res };
+  var paid = S.resolution && S.resolution.type === 'partial' ? S.resolution.amount : earned;
+  var p = S.sel;
+  var queueIt = function () {
+    var item = { kind: 'checkin', id: txn.id, txn: Object.assign({}, txn, { offline: true, resolution: res && res.type === 'partial' ? res : null }), paid: paid, total: total, name: p.name, at: Date.now(), status: 'pending' };
+    S.queue = S.queue.filter(function (q) { return q.id !== txn.id; }); S.queue.push(item); saveQueue();
+    localApply(p, total, paid);
+    finish({ id: txn.id, name: p.name, total: total, amount: paid, flags: '' }, false);
+  };
+  if (S.queue.some(function (q) { return q.kind === 'add' && q.ref === p.id; })) { S.busy = false; queueIt(); return; }
+  var draft = { pid: p.id, qty: Object.assign({}, S.qty), resolution: S.resolution };
+  localApply(p, total, paid);
+  finish({ id: txn.id, name: p.name, total: total, amount: paid, flags: '' }, 'saving');
+  S.busy = false; // the confirm sheet is closed; a repeat tap can't reach this check-in again
+  S.saving[txn.id] = true;
+  var done = function (state, t) {
+    delete S.saving[txn.id];
+    var showing = S.view === 'success' && S.last && S.last.t.id === txn.id;
+    if (showing) { S.last = { t: Object.assign(S.last.t, t || {}), synced: state === 'synced', state: state, draft: draft }; render(); if (state !== 'failed') startCountdown(); }
+    else renderPill();
+  };
+  call({ action: 'saveCheckin', txn: txn }).then(function (r) {
+    S.online = true;
+    if (r.ok) {
+      if (r.participant) replaceP(r.participant);
+      if (r.program && S.cache) { S.cache.program = r.program; saveCache(); }
+      updateRecent(txn.id, r.txn);
+      done('synced', r.txn);
+    } else if (r.code === 'AUTH') { queueIt2(); done('pending'); authLost(); }
+    else {
+      bootstrap(); // refresh totals from the server
+      var showing = S.view === 'success' && S.last && S.last.t.id === txn.id;
+      if (showing) { S.recent = S.recent.filter(function (x) { return x.id !== txn.id; }); store.set('recent', S.recent); S.last.error = r.code === 'OVER_LIMIT' ? 'Another check-in just used up this ' + ((settings().limitScope || 'household').toLowerCase()) + '\'s payout limit.' : (r.error || 'The server refused this check-in.'); S.last.limit = r.limit; done('failed'); }
+      else {
+        // The volunteer already moved on (and has likely paid): record it anyway and flag it for review.
+        if (r.code === 'OVER_LIMIT') { queueIt2(); toast('⚠ ' + p.name + ' went over the payout limit — saved and flagged for admin review.', 7000); }
+        else { S.queue.push({ kind: 'checkin', id: txn.id, txn: txn, paid: paid, total: total, name: p.name, at: Date.now(), status: 'failed', error: r.error }); saveQueue(); toast('⚠ ' + p.name + ': ' + (r.error || 'not saved') + ' — see Admin › Sync status.', 8000); }
+        done('failed');
+      }
+    }
+  }).catch(function () {
+    S.online = false;
+    if (res && res.type === 'override') { S.last.error = 'No signal: an admin override needs a connection. Go back and choose "pay up to limit", or wait for signal.'; done('failed'); return; }
+    queueIt2(); done('pending');
+  });
+  function queueIt2() {
+    var item = { kind: 'checkin', id: txn.id, txn: Object.assign({}, txn, { offline: true, resolution: res && res.type === 'partial' ? res : null }), paid: paid, total: total, name: p.name, at: Date.now(), status: 'pending' };
+    S.queue = S.queue.filter(function (q) { return q.id !== txn.id; }); S.queue.push(item); saveQueue();
+  }
+}
+
+function updateRecent(id, t) {
+  S.recent.forEach(function (x) { if (x.id === id && t) { x.total = t.total; x.amount = t.amount; } });
+  store.set('recent', S.recent);
+}
+
+function startCountdown() {
+  var n = 8, el;
+  clearInterval(S.cd);
+  S.cd = setInterval(function () { n--; el = $('cd'); if (el) el.textContent = n; if (n <= 0 || S.view !== 'success') { clearInterval(S.cd); if (S.view === 'success') setView('checkin'); } }, 1000);
+}
+
+function localApply(p, total, paid) {
+  var t = todayKey();
+  p.n = (p.n || 0) + 1; p.animals = (p.animals || 0) + total; p.paid = (p.paid || 0) + paid; p.lastDate = t; p.today = (p.today || 0) + 1; p.todayAnimals = (p.todayAnimals || 0) + total; p.todayTime = timeNow();
+  replaceP(p);
+}
+
+function replaceP(np) {
+  if (!S.cache) return;
+  var r = S.cache.roster, found = false;
+  for (var i = 0; i < r.length; i++) if (r[i].id === np.id) { r[i] = np; found = true; }
+  if (!found) r.push(np);
+  // keep household totals in step for siblings
+  r.forEach(function (x) { if (x.hh === np.hh && x.id !== np.id && np.hhPaid != null && !np.local) { x.hhPaid = np.hhPaid; x.hhAnimals = np.hhAnimals; if (!/^p/i.test(settings().limitScope || '')) x.limitPaid = np.limitPaid; } });
+  saveCache();
+}
+
+function finish(t, state) {
+  closeModal();
+  if (state === true) state = 'synced'; else if (state === false) state = 'pending';
+  S.recent.unshift({ id: t.id, name: t.name, total: t.total, amount: t.amount, time: timeNow(), date: todayKey() });
+  S.recent = S.recent.slice(0, 40); store.set('recent', S.recent);
+  S.last = { t: t, synced: state === 'synced', state: state };
+  store.del('draft'); S.qty = {}; S.txnId = ''; S.resolution = null; S.q = '';
+  setView('success');
+  clearInterval(S.cd);
+  if (state !== 'saving') startCountdown();
+}
+
+function successHtml() {
+  var L = S.last, t = L.t, st = L.state || (L.synced ? 'synced' : 'pending');
+  if (st === 'failed') {
+    return '<div class="stack"><div class="success failed" role="alert"><div class="ck">✕</div><div class="t">NOT SAVED</div>' +
+      '<div class="nm">' + esc(t.name) + '</div><div class="sync">' + esc(L.error || 'The check-in was refused.') + ' <b>Do not pay yet.</b></div></div>' +
+      '<button class="btn go" data-act="reopen" style="min-height:76px">Back to this check-in</button>' +
+      '<button class="btn" data-act="another">Cancel it</button></div>';
+  }
+  var cls = st === 'synced' ? '' : (st === 'saving' ? ' saving' : ' pending');
+  var head = st === 'synced' ? 'SUCCESS' : (st === 'saving' ? 'RECORDED' : 'SAVED ON THIS PHONE');
+  var sync = st === 'synced' ? '✓ Synced to Google Sheets' : (st === 'saving' ? '<span class="spin"></span>Saving to Google Sheets…' : 'PENDING SYNC — no signal. It will upload automatically when signal returns. Do not re-enter it.');
+  var flags = t.flags ? '<div class="banner warn" style="margin-top:12px">Flagged for admin review: ' + esc(t.flags) + '</div>' : '';
+  return '<div class="stack"><div class="success' + cls + '" role="status">' +
+    '<div class="ck">' + (st === 'pending' ? '↻' : '✓') + '</div><div class="t">' + head + '</div>' +
+    '<div class="nm">' + esc(t.name) + '</div><div class="amt">' + t.total + ' animal' + (t.total === 1 ? '' : 's') + ' · ' + money(t.amount) + '</div>' +
+    '<div class="sync">' + sync + '</div></div>' + flags +
+    '<button class="btn primary" data-act="another" style="min-height:76px">Check in another participant</button>' +
+    (st === 'saving' ? '<p class="center muted">You can start the next one — this keeps saving.</p>' : '<p class="center muted">Returning to search in <b id="cd">8</b>…</p>') + '</div>';
+}
+
+/* ---------- add participant ---------- */
+function addHtml() {
+  var q = S.q.trim(), parts = q.split(/\s+/), first = '', last = '';
+  if (q && !search(q).length) { first = parts[0] || ''; last = parts.slice(1).join(' '); }
+  var towns = settings().towns || {}, opts = Object.keys(towns).map(function (t) { return '<option value="' + esc(t.replace(/\b\w/g, function (c) { return c.toUpperCase(); })) + '">'; }).join('');
+  return '<div class="stack"><h2>Add new participant</h2>' +
+    '<div class="banner warn">Only add a youth who is not on the list. Make sure the parent signs the affidavit/waiver — the first check-in is flagged for admin review.</div>' +
+    '<form id="addform" class="card" autocomplete="off">' +
+    '<div class="grid2"><div class="field"><label class="lbl" for="a_first">First name *</label><input class="big" id="a_first" value="' + esc(first) + '" autocapitalize="words"></div>' +
+    '<div class="field"><label class="lbl" for="a_last">Last name</label><input class="big" id="a_last" value="' + esc(last) + '" autocapitalize="words"></div></div>' +
+    '<div class="grid2"><div class="field"><label class="lbl" for="a_age">Age *</label><input class="big" id="a_age" inputmode="numeric" pattern="[0-9]*" maxlength="2"></div>' +
+    '<div class="field"><label class="lbl" for="a_town">Town</label><input class="big" id="a_town" list="townlist" autocapitalize="words"><datalist id="townlist">' + opts + '</datalist></div></div>' +
+    '<div class="field"><label class="lbl" for="a_parent">Parent / guardian name *</label><input class="big" id="a_parent" autocapitalize="words"></div>' +
+    '<div class="field"><label class="lbl" for="a_phone">Parent phone *</label><input class="big" id="a_phone" type="tel" inputmode="tel"></div>' +
+    '<div id="adderr"></div><div id="dupbox"></div>' +
+    '<div class="stack"><button class="btn go" type="submit" id="addbtn">Save &amp; check in</button><button class="btn" type="button" data-act="back">Cancel</button></div></form>' +
+    '<p class="muted">Siblings are grouped automatically by the parent\'s phone number.</p></div>';
+}
+
+function submitAdd(e, allowDup) {
+  if (e) e.preventDefault();
+  var v = function (id) { return ($(id).value || '').trim(); };
+  var req = { action: 'addParticipant', first: v('a_first'), last: v('a_last'), age: v('a_age'), parent: v('a_parent'), phone: v('a_phone'), city: v('a_town'), allowDuplicateName: !!allowDup };
+  var err = '';
+  if (!req.first) err = 'Enter the first name.';
+  else if (!/^\d{1,2}$/.test(req.age)) err = 'Enter the age.';
+  else if (!req.parent) err = 'Enter the parent or guardian name.';
+  else if (req.phone.replace(/\D/g, '').length < 7) err = 'Enter the parent\'s phone number.';
+  if (err) { $('adderr').innerHTML = '<div class="banner bad">' + esc(err) + '</div>'; return; }
+  req.ref = 'C-' + rid(10);
+  var b = $('addbtn'); b.disabled = true; b.textContent = 'Saving…';
+  call(req).then(function (r) {
+    b.disabled = false; b.textContent = 'Save & check in';
+    if (r.ok) { replaceP(r.participant); toast(r.message || 'Participant added'); pick(r.participant.id); return; }
+    if (r.code === 'DUP_NAME') {
+      $('dupbox').innerHTML = '<div class="banner warn stack"><div><b>' + esc(r.error) + '</b> Is it one of these?</div>' + r.matches.map(function (p) { replaceP(p); return cardHtml(p); }).join('') +
+        '<button class="btn" type="button" data-act="adddup">No — add as a different person</button></div>';
+      return;
+    }
+    if (r.code === 'AUTH') return authLost();
+    $('adderr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>';
+  }).catch(function () {
+    // Offline: keep the new participant on this phone, upload later (idempotent by ref)
+    S.online = false;
+    var full = (titleCase(req.first) + ' ' + titleCase(req.last)).trim();
+    var local = { id: req.ref, name: full, first: req.first, last: req.last, parent: req.parent, city: req.city, county: '', age: Number(req.age), ya: Number(req.age) < 18 ? 'Youth' : 'Adult', hh: req.ref, hhSize: 1, n: 0, animals: 0, paid: 0, limitPaid: 0, hhPaid: 0, local: true };
+    S.queue.push({ kind: 'add', id: req.ref, ref: req.ref, req: req, name: full, at: Date.now(), status: 'pending' }); saveQueue();
+    replaceP(local); toast('No signal — participant saved on this phone.', 4000); pick(local.id);
+  });
+}
+function titleCase(s) { return String(s || '').toLowerCase().replace(/(^|[\s'\-])([a-z])/g, function (a, b, c) { return b + c.toUpperCase(); }); }
+
+/* ---------- daily summary ---------- */
+function loadDaily(date) {
+  S.daily = { loading: true, date: date };
+  if (S.view === 'daily') render();
+  call({ action: 'daily', date: date || '' }).then(function (r) {
+    if (r.code === 'AUTH') return authLost();
+    S.online = true; S.daily = r.ok ? r : { error: r.error }; if (S.view === 'daily') render();
+  }).catch(function () { S.online = false; S.daily = { offline: true }; if (S.view === 'daily') render(); });
+}
+
+function seasonHtml(d) {
+  var s = d.season;
+  if (!s) return '<div class="banner warn">Season totals need the latest app update on the server.</div>';
+  var pct = function (a, b) { return b > 0 ? Math.max(0, Math.min(100, Math.round(a / b * 100))) : 0; };
+  var budget = s.budget > 0 ? '<div class="tile big"><div class="k">Remaining bounty dollars</div><div class="n">' + money(s.remainingBudget).replace('.00', '') + '</div>' +
+      '<div class="small">' + money(s.paid).replace('.00', '') + ' paid of ' + money(s.budget).replace('.00', '') + '</div><div class="bar"><span style="width:' + pct(s.paid, s.budget) + '%"></span></div></div>' : '';
+  var cap = s.cap > 0 ? '<div class="tile big"><div class="k">Animals left before the cap</div><div class="n">' + s.remainingCap + '</div>' +
+      '<div class="small">' + s.animals + ' submitted of ' + s.cap + '</div><div class="bar"><span style="width:' + pct(s.animals, s.cap) + '%"></span></div></div>' : '';
+  var tiles = '<div class="tiles">' + budget + cap +
+    '<div class="tile"><div class="n">' + s.animals + '</div><div class="k">Animals</div></div>' +
+    '<div class="tile"><div class="n">' + money(s.paid).replace('.00', '') + '</div><div class="k">Bounty paid</div></div>' +
+    '<div class="tile"><div class="n">' + s.participants + '</div><div class="k">Youth checked in</div></div>' +
+    '<div class="tile"><div class="n">' + s.nights + '</div><div class="k">Check-in nights</div></div></div>';
+  var sp = '<div class="card"><span class="lbl">Season by species</span><table class="list"><tbody>' + s.bySpecies.map(function (x) { return '<tr><td>' + esc(x.name) + '</td><td class="r"><b>' + x.qty + '</b></td></tr>'; }).join('') + '</tbody></table></div>';
+  var wk = '<div class="card"><span class="lbl">By week (Wed–Tue)</span><table class="list"><thead><tr><th>Week</th><th class="r">Youth</th><th class="r">Animals</th><th class="r">Paid</th></tr></thead><tbody>' +
+    (s.weeks.length ? s.weeks.map(function (w) { return '<tr><td><b>Week ' + w.n + '</b><div class="small">of ' + esc(shortDate(w.week)) + '</div></td><td class="r">' + w.participants + '</td><td class="r"><b>' + w.animals + '</b></td><td class="r">' + money(w.paid).replace('.00', '') + '</td></tr>'; }).join('') : '<tr><td colspan="4">No check-ins yet.</td></tr>') + '</tbody></table></div>';
+  return tiles + sp + wk;
+}
+
+function dailyHtml() {
+  var d = S.daily, st = settings();
+  var pend = pending().filter(function (q) { return q.kind === 'checkin'; });
+  var seg = '<div class="seg" role="tablist"><button data-act="sumtab" data-t="today" class="' + (S.sumTab === 'today' ? 'on' : '') + '">TODAY</button><button data-act="sumtab" data-t="season" class="' + (S.sumTab === 'season' ? 'on' : '') + '">SEASON</button></div>';
+  if (S.sumTab === 'season') {
+    if (!d || d.loading) return '<div class="stack">' + seg + '<div class="banner warn">Loading…</div></div>';
+    if (d.offline || d.error) return '<div class="stack">' + seg + '<div class="banner bad">' + (d.error ? esc(d.error) : 'No signal — season totals need a connection.') + '</div><button class="btn" data-act="refreshdaily">Try again</button></div>';
+    return '<div class="stack">' + seg + '<h2>Season to date</h2>' + (pend.length ? '<div class="banner warn">' + pend.length + ' check-in(s) on this phone are waiting to upload and are not counted yet.</div>' : '') + seasonHtml(d) + '<button class="btn" data-act="refreshdaily">Refresh</button></div>';
+  }
+  var head = seg + '<h2>' + (d && d.date && d.date !== d.today ? 'Check-in summary ' + esc(d.date) : 'Today\'s check-in') + '</h2>';
+  if (S.role === 'admin' && d && d.dates) head += '<div class="field"><label class="lbl" for="daydate">Show another date</label><select class="big" id="daydate">' +
+    [d.today].concat(d.dates.filter(function (x) { return x !== d.today; })).map(function (x) { return '<option value="' + esc(x) + '"' + (x === d.date ? ' selected' : '') + '>' + esc(x) + (x === d.today ? ' (today)' : '') + '</option>'; }).join('') + '</select></div>';
+  if (!d || d.loading) return '<div class="stack">' + head + '<div class="banner warn">Loading…</div></div>';
+  var pendHtml = pend.length ? '<div class="banner warn">' + pend.length + ' check-in(s) on this phone are waiting to upload and are <b>not</b> in the totals below yet.</div>' : '';
+  if (d.offline || d.error) {
+    return '<div class="stack">' + head + pendHtml + '<div class="banner bad">' + (d.error ? esc(d.error) : 'No signal — today\'s totals need a connection. Check-ins on this phone are listed below.') + '</div>' + recentHtml() +
+      '<button class="btn" data-act="refreshdaily">Try again</button></div>';
+  }
+  var tiles = '<div class="tiles"><div class="tile"><div class="n">' + d.participants + '</div><div class="k">Participants</div></div>' +
+    '<div class="tile"><div class="n">' + d.transactions + '</div><div class="k">Transactions</div></div>' +
+    '<div class="tile"><div class="n">' + d.animals + '</div><div class="k">Animals</div></div>' +
+    '<div class="tile"><div class="n">' + money(d.paid).replace('.00', '') + '</div><div class="k">Bounty paid</div></div></div>';
+  var sp = '<div class="card"><span class="lbl">By species</span><table class="list"><tbody>' + d.bySpecies.map(function (s) { return '<tr><td>' + esc(s.name) + '</td><td class="r"><b>' + s.qty + '</b></td></tr>'; }).join('') + '</tbody></table></div>';
+  var pendRows = pend.map(function (q) { return '<tr><td>—</td><td><b>' + esc(q.name) + '</b></td><td class="r">' + q.total + '</td><td class="r">' + money(q.paid) + '</td><td class="r"><span class="sync-pend">↻ PENDING</span></td></tr>'; }).join('');
+  var rec = '<div class="card"><span class="lbl">Recent transactions</span><table class="list"><thead><tr><th>Time</th><th>Participant</th><th class="r">#</th><th class="r">$</th><th class="r">Sync</th></tr></thead><tbody>' + pendRows +
+    d.recent.map(function (t) { return '<tr><td>' + esc(t.time) + '</td><td><b>' + esc(t.name) + '</b>' + (t.status === 'Voided' ? ' <span class="sync-bad">VOID</span>' : '') + (t.flags ? '<div class="small">⚑ ' + esc(t.flags) + '</div>' : '') + '</td><td class="r">' + t.total + '</td><td class="r">' + money(t.amount) + '</td><td class="r"><span class="sync-ok">✓ SYNCED</span></td></tr>'; }).join('') +
+    (d.recent.length || pend.length ? '' : '<tr><td colspan="5">No check-ins yet.</td></tr>') + '</tbody></table></div>';
+  var prog = d.season && d.season.budget > 0 ? '<p class="muted">Season so far: <b>' + d.season.animals + '</b> animals · ' + money(d.season.paid).replace('.00', '') + ' paid · <b>' + money(d.season.remainingBudget).replace('.00', '') + ' left</b> — tap SEASON for details</p>' : '';
+  return '<div class="stack">' + head + pendHtml + tiles + prog + sp + rec + '<button class="btn" data-act="refreshdaily">Refresh</button></div>';
+}
+
+/* ---------- admin ---------- */
+function adminHtml() {
+  if (S.role !== 'admin') {
+    return '<div class="stack"><h2>Admin / settings</h2><form id="adminform" class="card stack"><div><label class="lbl" for="apw">Administrator password</label><input class="big" id="apw" type="password" autocomplete="off"></div>' +
+      '<div id="aerr"></div><button class="btn primary" type="submit">Unlock admin</button></form><p class="muted">Volunteers don\'t need this screen. Admin tools: corrections, flagged items, settings, passwords, imports, exports.</p></div>';
+  }
+  var v = S.adminView;
+  if (v) return '<div class="stack"><button class="btn sm" data-act="admin" data-v="">◀ Admin menu</button><div id="adminbody">' + (ADMIN_VIEWS[v] ? ADMIN_VIEWS[v].html() : '') + '</div></div>';
+  var f = failed().length, p = pending().length;
+  var items = [['flagged', 'Review flagged check-ins'], ['tx', 'Find / correct a transaction'], ['parts', 'Participants: add, deactivate, import'], ['settings', 'Program settings & species'],
+    ['pw', 'Change passwords'], ['qr', 'QR codes: show, email'], ['sync', 'Sync status' + (p || f ? ' (' + (p + f) + ' on this phone)' : '')], ['export', 'Export transactions (CSV)']];
+  return '<div class="stack adminmenu"><h2>Admin / settings</h2>' + items.map(function (i) { return '<button class="btn" data-act="admin" data-v="' + i[0] + '">' + esc(i[1]) + '<span>›</span></button>'; }).join('') +
+    '<button class="btn" data-act="opensheet">Open the Google Sheet<span>↗</span></button>' +
+    '<button class="btn bad" data-act="leaveadmin">Leave admin mode</button></div>';
+}
+
+function adminCall(req, done) {
+  call(req).then(function (r) {
+    if (r.code === 'AUTH') return authLost();
+    if (r.code === 'ADMIN') { S.role = 'volunteer'; store.set('role', 'volunteer'); render(); return; }
+    done(r);
+  }).catch(function () { toast('No connection — admin tools need a signal.', 4000); });
+}
+
+var ADMIN_VIEWS = {
+  flagged: {
+    html: function () { setTimeout(function () { adminCall({ action: 'admin_searchTx', flagged: true }, function (r) { $('flaglist').innerHTML = r.ok ? txList(r.results, true) : esc(r.error); }); }, 0); return '<h2>Flagged for review</h2><div id="flaglist">Loading…</div>'; }
+  },
+  tx: {
+    html: function () { return '<h2>Find a transaction</h2><form id="txsearch" class="card stack"><input class="big" id="txq" placeholder="Name or transaction ID"><input class="big" id="txd" type="date"><button class="btn primary" type="submit">Search</button></form><div id="txlist"></div>'; }
+  },
+  parts: {
+    html: function () {
+      return '<h2>Participants</h2><form id="psearch" class="card stack"><input class="big" id="pq" placeholder="Name, parent, or ID"><button class="btn primary" type="submit">Search</button></form><div id="plist"></div>' +
+        '<div class="card stack"><span class="lbl">Import registrations</span><p class="small">Pulls new rows from the registration form spreadsheet. Already-imported people are skipped.</p>' +
+        '<input class="big" id="imurl" placeholder="Form responses spreadsheet URL (blank = saved setting)"><input class="big" id="imtab" placeholder="Tab (default Form Responses 1)">' +
+        '<div class="grid2"><button class="btn" data-act="import" data-dry="1">Preview</button><button class="btn go" data-act="import">Import now</button></div><div id="imres"></div></div>' +
+        '<button class="btn" data-act="add">+ Add a participant</button>';
+    }
+  },
+  settings: {
+    html: function () {
+      setTimeout(function () { adminCall({ action: 'admin_getSettings' }, function (r) { S.adminSettings = r; $('setbody').innerHTML = settingsForm(r); }); }, 0);
+      return '<h2>Program settings</h2><div id="setbody">Loading…</div>';
+    }
+  },
+  pw: {
+    html: function () {
+      return '<h2>Change passwords</h2>' + ['volunteer', 'admin'].map(function (k) {
+        return '<form class="card stack pwform" data-kind="' + k + '"><span class="lbl">' + (k === 'admin' ? 'Administrator password (8+ characters)' : 'Volunteer check-in password (6+ characters)') + '</span>' +
+          '<input class="big" type="password" name="p1" placeholder="New password" autocomplete="new-password"><input class="big" type="password" name="p2" placeholder="Type it again" autocomplete="new-password">' +
+          '<button class="btn primary" type="submit">Save ' + k + ' password</button></form>';
+      }).join('') + '<p class="muted">Changing the volunteer password logs out every phone using the old one.</p>';
+    }
+  },
+  sync: {
+    html: function () {
+      setTimeout(function () { adminCall({ action: 'admin_log' }, function (r) { $('srvlog').innerHTML = r.ok ? (r.entries.length ? '<table class="list"><tbody>' + r.entries.slice(0, 40).map(function (e) { return '<tr><td class="small">' + esc(e.time) + '<br>' + esc(e.level) + '</td><td class="small">' + esc(e.action) + ' ' + esc(e.txn) + '<br>' + esc(e.message) + '</td></tr>'; }).join('') + '</tbody></table>' : 'No errors logged.') : esc(r.error); }); }, 0);
+      var q = S.queue;
+      return '<h2>Sync status</h2><div class="card stack"><span class="lbl">Waiting on this phone (' + q.length + ')</span>' +
+        (q.length ? '<table class="list"><tbody>' + q.map(function (i) { return '<tr><td><b>' + esc(i.name) + '</b><div class="small">' + esc(i.kind === 'add' ? 'New participant' : (i.total + ' animals · ' + money(i.paid))) + ' · ' + esc(new Date(i.at).toLocaleString()) + '</div>' + (i.error ? '<div class="small sync-bad">' + esc(i.error) + '</div>' : '') + '</td><td class="r">' + (i.status === 'failed' ? '<span class="sync-bad">FAILED</span>' : '<span class="sync-pend">PENDING</span>') + '</td></tr>'; }).join('') + '</tbody></table>' : '<p>Nothing waiting — everything from this phone is in Google Sheets.</p>') +
+        '<button class="btn primary" data-act="retrysync">Retry now</button></div><div class="card"><span class="lbl">Server log (latest)</span><div id="srvlog">Loading…</div></div>';
+    }
+  },
+  qr: {
+    html: function () {
+      return '<h2>QR check-in codes</h2><div class="card stack"><p>Each youth has a code. Families can show it at check-in and a volunteer taps <b>📷 SCAN</b>.</p>' +
+        '<p class="small">To show or re-send one code, open <b>Participants</b>, search the name, then tap <b>QR code</b>.</p>' +
+        '<button class="btn primary" data-act="qrall" data-dry="1">Email codes to families who don\'t have theirs yet</button><div id="qrallres"></div></div>';
+    }
+  },
+  export: {
+    html: function () { return '<h2>Export</h2><div class="card stack"><p>Downloads every transaction (including corrected and voided rows) as a CSV file.</p><button class="btn primary" data-act="csv">Download CSV</button></div>'; }
+  }
+};
+
+function txList(list, flagged) {
+  if (!list.length) return '<p class="card">' + (flagged ? 'Nothing needs review. 👍' : 'No transactions found.') + '</p>';
+  return list.map(function (t) {
+    var q = Object.keys(t.qty).filter(function (k) { return t.qty[k]; }).map(function (k) { return k + ' ' + t.qty[k]; }).join(', ');
+    return '<div class="card stack" style="margin-bottom:10px"><div><b style="font-size:22px">' + esc(t.name) + '</b> <span class="small">' + esc(t.id) + '</span></div>' +
+      '<div class="small">' + esc(t.date) + ' ' + esc(t.time) + ' · ' + esc(q) + ' · <b>' + t.total + '</b> animals · paid <b>' + money(t.amount) + '</b> (' + esc(t.payment) + ') · ' + (t.status === 'Voided' ? '<span class="sync-bad">VOIDED — not counted</span>' : esc(t.status)) + '</div>' +
+      (t.flags ? '<div class="banner warn small">⚑ ' + esc(t.flags) + '</div>' : '') + (t.review && t.review !== 'Needs Review' ? '<div class="small">' + esc(t.review) + '</div>' : '') +
+      (t.notes ? '<div class="small">Notes: ' + esc(t.notes) + '</div>' : '') +
+      '<div class="grid2">' + (flagged ? '<button class="btn sm go" data-act="resolveflag" data-id="' + esc(t.id) + '">Mark resolved</button>' : '<span></span>') +
+      '<button class="btn sm" data-act="correct" data-id="' + esc(t.id) + '">' + (t.status === 'Voided' ? 'View / restore' : 'Correct / void') + '</button></div></div>';
+  }).join('');
+}
+
+function settingsForm(r) {
+  var s = r.settings;
+  var f = function (k, label, type) { return '<div class="field"><label class="lbl" for="set_' + k + '">' + label + '</label><input class="big" id="set_' + k + '" data-k="' + k + '" type="' + (type || 'text') + '" value="' + esc(s[k]) + '"' + (type === 'number' ? ' inputmode="decimal"' : '') + '></div>'; };
+  return '<form id="setform" class="card">' + f('bounty_rate', 'Bounty rate ($ per animal)', 'number') + f('household_max', 'Payout maximum ($, 0 = none)', 'number') +
+    '<div class="field"><label class="lbl" for="set_limit_scope">Apply maximum per</label><select class="big" id="set_limit_scope" data-k="limit_scope"><option' + (/^p/i.test(s.limit_scope) ? '' : ' selected') + '>Household</option><option' + (/^p/i.test(s.limit_scope) ? ' selected' : '') + '>Participant</option></select></div>' +
+    f('program_start', 'Program start', 'date') + f('program_end', 'Program end', 'date') + f('program_payout_budget', 'Program payout budget ($, 0 = none)', 'number') +
+    f('program_animal_cap', 'Program animal cap (0 = none)', 'number') + f('session_timeout_minutes', 'Log out after idle minutes (10–360)', 'number') +
+    '<span class="lbl">Eligible species</span><div id="splist">' + r.species.map(function (sp) { return '<label class="row" style="grid-template-columns:1fr 64px;margin-bottom:8px"><span class="sp">' + esc(sp.name) + '</span><input type="checkbox" data-sp="' + esc(sp.name) + '"' + (sp.active ? ' checked' : '') + ' style="width:40px;height:40px"></label>'; }).join('') + '</div>' +
+    '<div class="field"><label class="lbl" for="newsp">Add a species</label><input class="big" id="newsp" placeholder="e.g. Bobcat"></div>' +
+    '<div class="field"><label class="lbl" for="setreason">Reason for change (for the audit log)</label><input class="big" id="setreason"></div>' +
+    '<div id="seterr"></div><button class="btn go" type="submit">Save settings</button></form>';
+}
+
+function openCorrect(id) {
+  adminCall({ action: 'admin_searchTx', q: id }, function (r) {
+    var t = r.results && r.results.filter(function (x) { return x.id === id; })[0];
+    if (!t) return toast('Transaction not found');
+    var rows = Object.keys(t.qty).map(function (k) { return '<div class="row" style="grid-template-columns:1fr 110px"><span class="sp">' + esc(k) + '</span><input inputmode="numeric" pattern="[0-9]*" data-cq="' + esc(k) + '" value="' + t.qty[k] + '"></div>'; }).join('');
+    var isVoid = t.status === 'Voided';
+    if (isVoid) {
+      openModal('<h2>Voided transaction</h2><div class="card"><b style="font-size:22px">' + esc(t.name) + '</b><div class="small">' + esc(t.id) + ' · ' + esc(t.date) + ' ' + esc(t.time) + ' · ' + t.total + ' animals</div></div>' +
+        '<div class="banner warn" style="margin-top:10px">This transaction is already <b>voided</b>. It stays on the CHECK-IN TRANSACTIONS tab as a record, but it is <b>not counted</b> in any totals, summaries or payout limits. There is nothing more to do.</div>' +
+        (t.notes ? '<p class="small">' + esc(t.notes) + '</p>' : '') +
+        '<p class="small">Voided by mistake? Restore it and it will count again.</p>' +
+        '<div class="field"><label class="lbl" for="c_reason">Reason for restoring (required)</label><textarea class="big" id="c_reason"></textarea></div><div id="cerr"></div>' +
+        '<div class="stack"><button class="btn" data-act="closemodal">Close</button><button class="btn sm" data-act="restoretx" data-id="' + esc(t.id) + '">Restore this transaction</button></div>');
+      return;
+    }
+    openModal('<h2>Correct transaction</h2><div class="card"><b style="font-size:22px">' + esc(t.name) + '</b><div class="small">' + esc(t.id) + ' · ' + esc(t.date) + ' ' + esc(t.time) + ' · paid ' + money(t.amount) + '</div></div>' +
+      '<div class="species" style="margin-top:10px">' + rows + '</div>' +
+      '<div class="field" style="margin-top:10px"><label class="lbl" for="c_amt">Amount paid ($) — leave blank to recalculate</label><input class="big" id="c_amt" inputmode="decimal"></div>' +
+      '<div class="field"><label class="lbl" for="c_pay">Payment status</label><select class="big" id="c_pay">' + ['Paid', 'Not Paid', 'Not Paid - Limit Reached', 'Review - Over Limit'].map(function (o) { return '<option' + (o === t.payment ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+      '<label class="row" style="grid-template-columns:1fr 64px;margin-bottom:12px"><span class="sp">Void this transaction</span><input type="checkbox" id="c_void" style="width:40px;height:40px"></label>' +
+      '<div class="field"><label class="lbl" for="c_reason">Reason (required)</label><textarea class="big" id="c_reason"></textarea></div><div id="cerr"></div>' +
+      '<div class="stack"><button class="btn go" data-act="savecorrect" data-id="' + esc(t.id) + '">Save correction</button><button class="btn" data-act="closemodal">Cancel</button></div>' +
+      '<p class="small">The original values are kept in the sheet and the change is written to the AUDIT LOG tab.</p>');
+  });
+}
+
+/* ---------------- QR scanning ---------------- */
+function codeFromText(text) {
+  text = String(text || '').trim();
+  var m = text.match(/[?&](?:qr|c)=([^&#]+)/);
+  return (m ? decodeURIComponent(m[1]) : text).toUpperCase();
+}
+function findByCode(code) {
+  code = codeFromText(code);
+  var r = roster();
+  for (var i = 0; i < r.length; i++) if (r[i].code && r[i].code.toUpperCase() === code) return r[i];
+  return null;
+}
+function openByCode(code) {
+  var p = findByCode(code);
+  if (p) { closeModal(); S.q = ''; pick(p.id); toast('Scanned: ' + p.name); return true; }
+  return false;
+}
+function stopScan() {
+  S.scanning = false;
+  if (S.scanStream) { S.scanStream.getTracks().forEach(function (t) { t.stop(); }); S.scanStream = null; }
+}
+/* Load the QR decoder (only needed where the browser has no built-in BarcodeDetector, e.g. iPhone).
+   The GitHub Pages copy ships jsqr.js next to the app; the Apps Script copy loads it from a CDN. */
+function loadJsQR(cb) {
+  if (window.jsQR || 'BarcodeDetector' in window) return cb(true);
+  if (S._jsqrWait) { S._jsqrWait.push(cb); return; }
+  S._jsqrWait = [cb];
+  var srcs = MODE === 'fetch' ? ['jsqr.js', 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'] : ['https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'];
+  var done = function (ok) { var w = S._jsqrWait || []; S._jsqrWait = null; w.forEach(function (f) { f(ok); }); };
+  var tryNext = function (i) {
+    if (i >= srcs.length) return done(false);
+    var sc = document.createElement('script'); sc.src = srcs[i];
+    sc.onload = function () { window.jsQR ? done(true) : tryNext(i + 1); }; sc.onerror = function () { tryNext(i + 1); };
+    document.head.appendChild(sc);
+  };
+  tryNext(0);
+}
+function hasNativeQR() { return 'BarcodeDetector' in window; }
+/* Look for a QR code in a canvas: whole picture first, then the middle (where people aim). */
+function scanCanvas(c, ctx, w, h, thorough) {
+  if (!window.jsQR) return null;
+  var r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: thorough ? 'attemptBoth' : 'dontInvert' });
+  return r && r.data;
+}
+/* Turn a photo file into something we can draw (handles phone photo rotation). */
+function photoToDrawable(file, cb) {
+  if (window.createImageBitmap) {
+    createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bmp) { cb(bmp, bmp.width, bmp.height); }).catch(function () { viaReader(); });
+  } else viaReader();
+  function viaReader() {
+    var fr = new FileReader();
+    fr.onload = function () { var img = new Image(); img.onload = function () { cb(img, img.naturalWidth, img.naturalHeight); }; img.onerror = function () { cb(null); }; img.src = fr.result; };
+    fr.onerror = function () { cb(null); };
+    fr.readAsDataURL(file);
+  }
+}
+/* Decode a QR from a photo at several sizes and crops; phone photos are large and the code is often small. */
+function decodePhoto(file, cb) {
+  photoToDrawable(file, function (src, W, H) {
+    if (!src) return cb(null);
+    var c = document.createElement('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
+    var plans = [];
+    [1200, 800, 1800].forEach(function (size) { plans.push({ crop: 1, size: size }); });
+    [0.6, 0.4].forEach(function (crop) { plans.push({ crop: crop, size: 900 }); });
+    var i = 0;
+    var step = function () {
+      if (i >= plans.length) return cb(null);
+      var pl = plans[i++];
+      var sw = W * pl.crop, sh = H * pl.crop, sx = (W - sw) / 2, sy = (H - sh) / 2;
+      var sc = Math.min(1, pl.size / Math.max(sw, sh)), w = Math.max(1, Math.round(sw * sc)), h = Math.max(1, Math.round(sh * sc));
+      c.width = w; c.height = h; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(src, sx, sy, sw, sh, 0, 0, w, h);
+      if (hasNativeQR()) {
+        new BarcodeDetector({ formats: ['qr_code'] }).detect(c).then(function (r) { if (r[0]) cb(r[0].rawValue); else setTimeout(step, 0); }).catch(function () { setTimeout(step, 0); });
+      } else {
+        var t = scanCanvas(c, ctx, w, h, true);
+        if (t) cb(t); else setTimeout(step, 0);
+      }
+    };
+    step();
+  });
+}
+/* Photo mode: opens the phone's own camera app. Used where live video isn't allowed (inside Google's frame). */
+function openPhotoScanner(note) {
+  stopScan();
+  loadJsQR(function () {});
+  openModal('<h2>Scan QR code</h2>' + (note ? '<p class="small">' + note + '</p>' : '') +
+    '<label class="btn go" for="scanfile" style="display:flex;align-items:center;justify-content:center;min-height:90px;font-size:24px">📷 Take photo of code</label>' +
+    '<input type="file" id="scanfile" accept="image/*" capture="environment" style="position:absolute;width:1px;height:1px;opacity:0">' +
+    '<p class="center" id="scanmsg" style="margin:12px 0">Hold the phone so the QR code fills most of the picture, then tap <b>Use Photo</b>.</p>' +
+    '<button class="btn" data-act="closemodal">Cancel</button>');
+  var inp = $('scanfile');
+  if (inp) inp.addEventListener('change', function () {
+    var f = inp.files && inp.files[0]; if (!f) return;
+    var m = $('scanmsg'); if (m) m.innerHTML = 'Reading code…';
+    var gaveUp = false, tmr = setTimeout(function () { gaveUp = true; var mm = $('scanmsg'); if (mm) mm.innerHTML = '<b>Couldn\'t read that photo.</b> Try again, or search by name.'; }, 15000);
+    loadJsQR(function (ok) {
+      if (!ok) { clearTimeout(tmr); if (m) m.innerHTML = '<b>Scanner needs a signal the first time.</b> Search by name instead.'; return; }
+      decodePhoto(f, function (text) {
+        clearTimeout(tmr); inp.value = ''; if (gaveUp && !text) return;
+        if (text && openByCode(text)) return;
+        var mm = $('scanmsg'); if (mm) mm.innerHTML = text ? '<b>That code isn\'t on the roster.</b> Search by name.' : '<b>No QR code found in that photo.</b> Get closer so the code fills the picture, and try again.';
+      });
+    });
+  });
+}
+/* Live mode: camera preview right in the app (GitHub Pages / installed app). */
+function openScanner() {
+  // Google Apps Script serves the app inside a frame that is not allowed to use the camera directly,
+  // so there (and anywhere live video isn't available) use the phone's camera app instead.
+  if (MODE === 'gas' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return openPhotoScanner();
+  openModal('<h2>Scan QR code</h2><div class="scanbox"><video id="scanv" playsinline muted autoplay></video><div class="frame"></div></div>' +
+    '<p class="center" id="scanmsg">Point the camera at the participant\'s QR code.</p>' +
+    '<div class="stack"><button class="btn" data-act="closemodal">Cancel</button><button class="btn sm" data-act="scanphoto">Use a photo instead</button></div>');
+  var gotDecoder = false;
+  loadJsQR(function (ok) { gotDecoder = ok; if (!ok) { var m = $('scanmsg'); if (m) m.innerHTML = '<b>Scanner needs a signal the first time.</b> Search by name instead.'; } });
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }).then(function (stream) {
+    var v = $('scanv'); if (!v) { stream.getTracks().forEach(function (t) { t.stop(); }); return; }
+    S.scanStream = stream; S.scanning = true; v.srcObject = stream; v.play().catch(function () {});
+    var lastMiss = 0, frame = 0;
+    var hit = function (text) {
+      if (!S.scanning) return true;
+      if (openByCode(text)) return true;
+      if (Date.now() - lastMiss > 2500) { lastMiss = Date.now(); var m = $('scanmsg'); if (m) m.innerHTML = '<b>Code not recognized.</b> Try again, or search by name.'; }
+      return false;
+    };
+    var c = document.createElement('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
+    var det = hasNativeQR() ? new BarcodeDetector({ formats: ['qr_code'] }) : null;
+    var tick = function () {
+      if (!S.scanning) return;
+      if (!v.videoWidth || (!det && !window.jsQR)) return setTimeout(tick, 150);
+      var W = v.videoWidth, H = v.videoHeight;
+      if (det) {
+        det.detect(v).then(function (r) { if (!(r[0] && hit(r[0].rawValue))) setTimeout(tick, 150); }).catch(function () { setTimeout(tick, 400); });
+        return;
+      }
+      // Alternate: centre square (sharper, where people aim) and the whole frame.
+      frame++;
+      var sq = Math.min(W, H) * (frame % 2 ? 0.75 : 1), sx = frame % 2 ? (W - sq) / 2 : 0, sy = frame % 2 ? (H - sq) / 2 : 0, sw = frame % 2 ? sq : W, sh = frame % 2 ? sq : H;
+      var sc = Math.min(1, (frame % 2 ? 640 : 800) / Math.max(sw, sh)), w = Math.round(sw * sc), h = Math.round(sh * sc);
+      c.width = w; c.height = h; ctx.drawImage(v, sx, sy, sw, sh, 0, 0, w, h);
+      var t = scanCanvas(c, ctx, w, h, frame % 6 === 0);
+      if (!(t && hit(t))) setTimeout(tick, 60);
+    };
+    tick();
+  }).catch(function (err) {
+    stopScan();
+    var denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
+    openPhotoScanner(denied ? 'Camera access is turned off for this site. You can still take a photo of the code below, or turn the camera on: iPhone Settings → Apps → Safari → Camera → Allow, then reopen the app.' : 'Live camera isn\'t available here, so use a photo instead.');
+  });
+}
+function readLinkCode() {
+  try {
+    if (MODE === 'gas' && google.script.url) google.script.url.getLocation(function (loc) { var c = loc && loc.parameter && (loc.parameter.qr || loc.parameter.c); if (c) { S.pendingCode = c; tryPendingCode(); } });
+    else { var u = new URLSearchParams(location.search), c = u.get('qr') || u.get('c'); if (c) S.pendingCode = c; }
+  } catch (e) {}
+}
+function tryPendingCode() {
+  if (!S.pendingCode || !S.token || !S.cache) return;
+  var c = S.pendingCode; S.pendingCode = '';
+  if (!openByCode(c)) toast('That QR code isn\'t on the roster — search by name.', 5000);
+}
+
+/* ---------------- modal helpers ---------------- */
+function openModal(html) { $('modal').innerHTML = '<div class="modal" data-act="modalbg"><div class="sheet" role="dialog" aria-modal="true">' + html + '</div></div>'; }
+function closeModal() { stopScan(); $('modal').innerHTML = ''; }
+function confirmBox(title, body, okLabel, onOk, kind) {
+  S._confirm = onOk;
+  openModal('<h2>' + esc(title) + '</h2><p style="margin-bottom:14px">' + esc(body) + '</p><div class="stack"><button class="btn ' + (kind || 'go') + '" data-act="confirmok">' + esc(okLabel) + '</button><button class="btn" data-act="closemodal">Cancel</button></div>');
+}
+
+/* ---------------- offline queue ---------------- */
+function processQueue() {
+  if (S.syncing || !S.token) return;
+  var items = S.queue.filter(function (q) { return q.status !== 'failed'; });
+  if (!items.length) { renderPill(); return; }
+  S.syncing = true;
+  var i = 0;
+  var next = function () {
+    if (i >= items.length) { S.syncing = false; saveQueue(); if (S.view === 'daily') loadDaily(S.daily && S.daily.date); else if (S.view === 'checkin') renderResults(); return; }
+    var it = items[i++];
+    var req = it.kind === 'add' ? Object.assign({}, it.req) : { action: 'saveCheckin', txn: it.txn };
+    call(req).then(function (r) {
+      S.online = true;
+      if (r.ok) {
+        S.queue = S.queue.filter(function (q) { return q.id !== it.id; });
+        if (it.kind === 'add' && r.participant) {
+          var r0 = S.cache ? S.cache.roster : [];
+          for (var k = 0; k < r0.length; k++) if (r0[k].id === it.ref) r0.splice(k, 1);
+          replaceP(r.participant);
+        } else if (r.participant) replaceP(r.participant);
+        saveQueue(); next();
+      } else if (r.code === 'AUTH') { S.syncing = false; authLost(); }
+      else if (r.code === 'BUSY') { S.syncing = false; setTimeout(processQueue, 5000); }
+      else { it.status = 'failed'; it.error = r.error || 'Rejected'; saveQueue(); next(); }
+    }).catch(function () { S.online = false; S.syncing = false; renderPill(); });
+  };
+  next();
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click', function (e) {
+  var el = e.target.closest('[data-act]'); if (!el) return;
+  var a = el.getAttribute('data-act');
+  S.lastActivity = Date.now();
+  if (a === 'modalbg') { if (e.target === el) closeModal(); return; }
+  if (a === 'outdoor') { S.outdoor = !S.outdoor; document.body.classList.toggle('outdoor', S.outdoor); store.set('outdoor', S.outdoor); return; }
+  if (a === 'go') { var v = el.getAttribute('data-view'); if (v === 'daily') loadDaily(''); if (v === 'checkin') { S.q = ''; bootstrap(); } setView(v); return; }
+  if (a === 'logout') return logout();
+  if (a === 'clearq') { S.q = ''; var q = $('q'); if (q) { q.value = ''; q.focus(); } renderResults(); return; }
+  if (a === 'pick') { closeModal(); return pick(el.getAttribute('data-id')); }
+  if (a === 'scan') return openScanner();
+  if (a === 'scanphoto') return openPhotoScanner();
+  if (a === 'sumtab') { S.sumTab = el.getAttribute('data-t'); render(); return; }
+  if (a === 'reopen') {
+    var dr = S.last && S.last.draft, rp = dr && findP(dr.pid);
+    if (!rp) return setView('checkin');
+    S.sel = rp; S.qty = Object.assign({}, dr.qty); S.txnId = ''; S.resolution = null; setView('entry'); return;
+  }
+  if (a === 'showqr') {
+    adminCall({ action: 'admin_qr', id: el.getAttribute('data-id') }, function (r) {
+      if (!r.ok) return toast(r.error);
+      openModal('<h2>' + esc(r.name) + '</h2><img class="qrimg" src="' + r.gif + '" alt="QR code for ' + esc(r.name) + '"><p class="center"><b>' + esc(r.code) + '</b></p>' +
+        '<p class="center small">' + (r.emailed ? 'Emailed ' + esc(r.emailed) : 'Not emailed yet') + (r.email ? ' · ' + esc(r.email) : ' · no email on file') + '</p>' +
+        '<div class="stack">' + (r.email ? '<button class="btn primary" data-act="emailqr" data-id="' + esc(r.id) + '">Email this code to ' + esc(r.email) + '</button>' : '') + '<button class="btn" data-act="closemodal">Close</button></div>');
+    });
+    return;
+  }
+  if (a === 'emailqr') {
+    var qid = el.getAttribute('data-id'); el.disabled = true; el.textContent = 'Sending…';
+    adminCall({ action: 'admin_emailQr', id: qid }, function (r) { closeModal(); toast(r.ok ? (r.sent ? 'QR code emailed.' : 'No email sent (no address on file).') : r.error, 5000); });
+    return;
+  }
+  if (a === 'qrall') {
+    var dryq = !!el.getAttribute('data-dry'); var box = $('qrallres'); box.innerHTML = 'Checking…';
+    adminCall({ action: 'admin_emailQrAll', dryRun: dryq }, function (r) {
+      if (!r.ok) { box.innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; return; }
+      if (dryq) {
+        box.innerHTML = r.families ? '<div class="banner warn stack"><div>This sends <b>' + r.families + '</b> email(s) covering <b>' + r.youth + '</b> youth from the Gmail account that owns the app.' +
+          (r.noEmail.length ? ' No email on file: ' + esc(r.noEmail.join(', ')) + '.' : '') + '</div><button class="btn go" data-act="qrall">Send now</button></div>'
+          : '<div class="banner ok">Everyone with an email address already has their code.</div>';
+      } else box.innerHTML = '<div class="banner ok">Sent ' + r.sent + ' email(s) covering ' + r.youth + ' youth.</div>';
+    });
+    return;
+  }
+  if (a === 'add') { S.adminView = ''; return setView('add'); }
+  if (a === 'adddup') return submitAdd(null, true);
+  if (a === 'back') { store.del('draft'); S.sel = null; S.qty = {}; S.txnId = ''; S.resolution = null; return setView('checkin'); }
+  if (a === 'inc' || a === 'dec') { var sp = el.getAttribute('data-sp'); setQty(sp, (Number(S.qty[sp]) || 0) + (a === 'inc' ? 1 : -1)); var i = settings().species.indexOf(sp); var inp = $('qty_' + i); if (inp) inp.value = S.qty[sp]; return; }
+  if (a === 'save') return startSave();
+  if (a === 'confirm') return confirmSave();
+  if (a === 'closemodal') { closeModal(); return; }
+  if (a === 'confirmok') { var fn = S._confirm; S._confirm = null; closeModal(); if (fn) fn(); return; }
+  if (a === 'another') { clearInterval(S.cd); if (S.last && S.last.state === 'failed') bootstrap(); return setView('checkin'); }
+  if (a === 'resolve') {
+    var type = el.getAttribute('data-type');
+    if (type === 'partial') { S.resolution = { type: 'partial' }; updateTotals(); toast('OK — all animals recorded, payout capped at the limit.'); return; }
+    openModal('<h2>Admin override</h2><p>An administrator can approve paying more than the limit. This is flagged in the sheet.</p>' +
+      (S.role === 'admin' ? '' : '<div class="field"><label class="lbl" for="ov_pw">Administrator password</label><input class="big" id="ov_pw" type="password"></div>') +
+      '<div class="field"><label class="lbl" for="ov_reason">Reason (required)</label><input class="big" id="ov_reason"></div><div id="overr"></div>' +
+      '<div class="stack"><button class="btn go" data-act="overrideok">Approve override</button><button class="btn" data-act="closemodal">Cancel</button></div>');
+    return;
+  }
+  if (a === 'overrideok') {
+    var reason = ($('ov_reason').value || '').trim(), pw = $('ov_pw') ? $('ov_pw').value : '';
+    if (reason.length < 3) { $('overr').innerHTML = '<div class="banner bad">Enter a reason.</div>'; return; }
+    if (S.role !== 'admin' && !pw) { $('overr').innerHTML = '<div class="banner bad">Enter the administrator password.</div>'; return; }
+    S.resolution = { type: 'override', reason: reason, adminPassword: pw }; closeModal(); updateTotals(); return;
+  }
+  if (a === 'refreshdaily') return loadDaily(S.daily && S.daily.date);
+  if (a === 'admin') { S.adminView = el.getAttribute('data-v'); render(); window.scrollTo(0, 0); return; }
+  if (a === 'leaveadmin') { adminCall({ action: 'admin_leave' }, function () { S.role = 'volunteer'; store.set('role', 'volunteer'); S.adminView = ''; render(); }); return; }
+  if (a === 'opensheet') { adminCall({ action: 'admin_getSettings' }, function (r) { if (r.sheetUrl) window.open(r.sheetUrl, '_blank'); }); return; }
+  if (a === 'resolveflag') {
+    var id = el.getAttribute('data-id');
+    openModal('<h2>Mark resolved</h2><div class="field"><label class="lbl" for="rf_note">How was it resolved?</label><textarea class="big" id="rf_note"></textarea></div><div id="rferr"></div><div class="stack"><button class="btn go" data-act="resolveok" data-id="' + esc(id) + '">Save</button><button class="btn" data-act="closemodal">Cancel</button></div>');
+    return;
+  }
+  if (a === 'resolveok') {
+    var note = ($('rf_note').value || '').trim();
+    adminCall({ action: 'admin_resolveFlag', id: el.getAttribute('data-id'), note: note }, function (r) { if (!r.ok) { $('rferr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; return; } closeModal(); toast('Resolved'); render(); });
+    return;
+  }
+  if (a === 'correct') return openCorrect(el.getAttribute('data-id'));
+  if (a === 'restoretx') {
+    adminCall({ action: 'admin_correctTx', id: el.getAttribute('data-id'), restore: true, reason: $('c_reason').value }, function (r) { if (!r.ok) { $('cerr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; return; } closeModal(); toast(r.message); render(); });
+    return;
+  }
+  if (a === 'savecorrect') {
+    var qty = {}; Array.prototype.forEach.call(document.querySelectorAll('[data-cq]'), function (x) { qty[x.getAttribute('data-cq')] = Number(x.value) || 0; });
+    var req = { action: 'admin_correctTx', id: el.getAttribute('data-id'), qty: qty, payment: $('c_pay').value, void: $('c_void').checked, reason: $('c_reason').value };
+    if ($('c_amt').value.trim() !== '') req.amount = Number($('c_amt').value);
+    adminCall(req, function (r) { if (!r.ok) { $('cerr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; return; } closeModal(); toast(r.message); render(); });
+    return;
+  }
+  if (a === 'toggleP') {
+    var pid = el.getAttribute('data-id'), to = el.getAttribute('data-to');
+    adminCall({ action: 'admin_setParticipantStatus', id: pid, status: to, reason: 'Changed in app' }, function (r) { toast(r.ok ? 'Saved' : r.error); var f = $('psearch'); if (f) f.dispatchEvent(new Event('submit', { cancelable: true })); bootstrap(); });
+    return;
+  }
+  if (a === 'import') {
+    var dry = !!el.getAttribute('data-dry');
+    $('imres').innerHTML = 'Working…';
+    adminCall({ action: dry ? 'admin_importPreview' : 'admin_import', url: $('imurl').value.trim() || null, tab: $('imtab').value.trim() || null }, function (r) {
+      $('imres').innerHTML = r.ok ? '<div class="banner ok">' + (dry ? 'Preview: ' : 'Imported: ') + r.added + ' new · ' + r.skipped + ' already on roster · ' + r.found + ' form rows</div>' +
+        (r.sample && r.sample.length ? '<table class="list"><tbody>' + r.sample.map(function (s) { return '<tr><td><b>' + esc(s.name) + '</b><div class="small">' + esc([s.parent && 'Parent: ' + s.parent, s.city, s.county, s.age && 'age ' + s.age].filter(Boolean).join(' · ')) + (s.note ? '<br>⚑ ' + esc(s.note) : '') + '</div></td></tr>'; }).join('') + '</tbody></table>' : '')
+        : '<div class="banner bad">' + esc(r.error) + '</div>';
+      if (r.ok && !dry) bootstrap();
+    });
+    return;
+  }
+  if (a === 'retrysync') { S.queue.forEach(function (q) { q.status = 'pending'; q.error = ''; }); saveQueue(); processQueue(); setTimeout(render, 1500); return; }
+  if (a === 'csv') {
+    adminCall({ action: 'admin_exportCsv' }, function (r) {
+      if (!r.ok) return toast(r.error);
+      if (MODE === 'demo') { openModal('<h2>CSV (demo)</h2><p class="small">In the real app this downloads as a file.</p><textarea class="big" style="min-height:50vh;font-size:14px">' + esc(r.csv) + '</textarea><button class="btn" data-act="closemodal">Close</button>'); return; }
+      try { var blob = new Blob([r.csv], { type: 'text/csv' }); var u = URL.createObjectURL(blob); var l = document.createElement('a'); l.href = u; l.download = r.filename; document.body.appendChild(l); l.click(); l.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 5000); toast('CSV downloaded'); }
+      catch (err) { openModal('<h2>CSV</h2><textarea class="big" style="min-height:50vh">' + esc(r.csv) + '</textarea><button class="btn" data-act="closemodal">Close</button>'); }
+    });
+  }
+});
+
+document.addEventListener('input', function (e) {
+  var t = e.target; S.lastActivity = Date.now();
+  if (t.id === 'q') { S.q = t.value; renderResults(); return; }
+  if (t.classList.contains('qty')) { var v = t.value.replace(/\D/g, '').slice(0, 3); if (v !== t.value) t.value = v; setQty(t.getAttribute('data-sp'), v); return; }
+});
+document.addEventListener('focusin', function (e) {
+  if (e.target.classList && e.target.classList.contains('qty')) setTimeout(function () { try { e.target.select(); } catch (x) {} }, 0);
+  if (e.target.id === 'q') {
+    clearTimeout(S.kbT); document.body.classList.add('kb'); renderResults();
+    setTimeout(function () { var el = $('q'); if (el) window.scrollTo(0, el.getBoundingClientRect().top + window.pageYOffset - 6); }, 60);
+  }
+});
+document.addEventListener('focusout', function (e) {
+  if (e.target.id === 'q') S.kbT = setTimeout(function () { document.body.classList.remove('kb'); renderResults(); }, 350);
+});
+document.addEventListener('keydown', function (e) {
+  if (e.target.id === 'q' && (e.key === 'Enter' || e.keyCode === 13)) { e.preventDefault(); e.target.blur(); }
+});
+document.addEventListener('focusout', function (e) { if (e.target.classList && e.target.classList.contains('qty')) e.target.value = Number(S.qty[e.target.getAttribute('data-sp')]) || 0; });
+document.addEventListener('change', function (e) { if (e.target.id === 'daydate') loadDaily(e.target.value); });
+document.addEventListener('submit', function (e) {
+  var f = e.target;
+  if (f.id === 'loginform') return doLogin(e);
+  if (f.id === 'addform') return submitAdd(e, false);
+  e.preventDefault();
+  if (f.id === 'adminform') {
+    adminCall({ action: 'adminLogin', password: $('apw').value }, function (r) { if (!r.ok) { $('aerr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; return; } S.role = 'admin'; store.set('role', 'admin'); S.adminView = ''; render(); });
+  } else if (f.id === 'txsearch') {
+    adminCall({ action: 'admin_searchTx', q: $('txq').value, date: $('txd').value }, function (r) { $('txlist').innerHTML = r.ok ? '<p class="muted">' + r.count + ' found</p>' + txList(r.results, false) : esc(r.error); });
+  } else if (f.id === 'psearch') {
+    adminCall({ action: 'admin_participants', q: $('pq').value }, function (r) {
+      $('plist').innerHTML = r.ok ? r.results.map(function (p) {
+        return '<div class="card" style="margin-bottom:10px"><b style="font-size:22px">' + esc(p.name) + '</b> <span class="small">' + esc(p.id) + ' · ' + esc(p.hh) + '</span><div class="small">' + esc([p.parent && 'Parent: ' + p.parent, p.phone, p.city, p.county, p.age !== '' && 'age ' + p.age].filter(Boolean).join(' · ')) + '</div>' +
+          '<div class="small">' + p.n + ' check-ins · ' + p.animals + ' animals · ' + money(p.paid) + ' · <b>' + esc(p.status) + '</b>' + (p.notes ? '<br>⚑ ' + esc(p.notes) : '') + '</div>' +
+          '<div class="grid2" style="margin-top:8px"><button class="btn sm" data-act="showqr" data-id="' + esc(p.id) + '">QR code</button>' +
+          '<button class="btn sm" data-act="toggleP" data-id="' + esc(p.id) + '" data-to="' + (p.status === 'Inactive' ? 'Active' : 'Inactive') + '">' + (p.status === 'Inactive' ? 'Reactivate' : 'Deactivate') + '</button></div></div>';
+      }).join('') || '<p>No matches.</p>' : esc(r.error);
+    });
+  } else if (f.classList.contains('pwform')) {
+    var p1 = f.p1.value, p2 = f.p2.value, kind = f.getAttribute('data-kind');
+    if (p1 !== p2) return toast('The two passwords don\'t match.');
+    adminCall({ action: 'admin_setPassword', kind: kind, password: p1 }, function (r) { toast(r.ok ? r.message : r.error, 5000); if (r.ok) f.reset(); });
+  } else if (f.id === 'setform') {
+    var s = {}; Array.prototype.forEach.call(f.querySelectorAll('[data-k]'), function (x) { s[x.getAttribute('data-k')] = x.value; });
+    var sp = Array.prototype.map.call(f.querySelectorAll('[data-sp]'), function (x) { return { name: x.getAttribute('data-sp'), active: x.checked }; });
+    var ns = $('newsp').value.trim(); if (ns) sp.push({ name: ns, active: true });
+    adminCall({ action: 'admin_saveSettings', settings: s, species: sp, reason: $('setreason').value }, function (r) {
+      if (!r.ok) { $('seterr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; return; }
+      toast('Settings saved'); bootstrap(); S.adminSettings = r; $('setbody').innerHTML = settingsForm({ settings: r.settings, species: r.species });
+    });
+  }
+});
+
+window.addEventListener('online', function () { S.online = true; renderPill(); processQueue(); });
+window.addEventListener('offline', function () { S.online = false; renderPill(); });
+setInterval(function () {
+  if (!S.token) return;
+  if (pending().length) processQueue();
+  if (S.view === 'checkin' && !S.q && Date.now() - (S.cache && S.cache.at || 0) > 120000) bootstrap();
+  var idleMin = (settings().timeoutMin || 240);
+  if (Date.now() - S.lastActivity > idleMin * 60000 && !pending().length) { toast('Logged out after inactivity.'); logout(); }
+}, 15000);
+document.addEventListener('visibilitychange', function () { if (!document.hidden && S.token) { processQueue(); if (S.view === 'checkin') bootstrap(); } });
+
+if (MODE === 'fetch' && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+/* ---------------- start ---------------- */
+(function start() {
+  readLinkCode();
+  var draft = store.get('draft', null);
+  if (S.token && draft && S.cache) { var p = findP(draft.pid); if (p) { S.sel = p; S.qty = draft.qty || {}; S.txnId = draft.txnId || ''; setView('entry'); toast('Restored the check-in you were entering.', 4000); } else setView('checkin'); }
+  else setView('checkin');
+  if (S.token) bootstrap().then(processQueue);
+  else if (S.pendingCode) toast('Log in, and the scanned participant will open.', 5000);
+})();
+window.GPS_APP = { S: S, processQueue: processQueue, render: render, openByCode: openByCode, openPhotoScanner: openPhotoScanner };
+})();
+</script>
+</body>
+</html>
