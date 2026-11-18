@@ -290,7 +290,7 @@ function setView(v) {
 function render() {
   renderPill();
   var m = $('main');
-  if (!S.token) { m.innerHTML = loginHtml(); var pw = $('pw'); if (pw) pw.focus(); return; }
+  if (!S.token) { m.innerHTML = loginHtml(); var pw = $('pw'); if (pw) pw.focus(); warmUp(); return; }
   $('subtitle').textContent = 'CHECK-IN' + (S.role === 'admin' ? ' · ADMIN' : '') + (S.vol ? ' · ' + S.vol.toUpperCase() : '');
   if (S.view === 'checkin') { m.innerHTML = lookupHtml(); renderResults(); }
   else if (S.view === 'entry') { m.innerHTML = entryHtml(); updateTotals(); }
@@ -313,6 +313,12 @@ function loginHtml() {
     '<p class="muted center">Ask the event lead for the password. Tap ☀ for outdoor high-contrast mode.</p></div>';
 }
 
+/* Wake the Google server while the volunteer types the password, so the login itself is quicker. */
+function warmUp() {
+  if (MODE !== 'fetch' || S._warmAt && Date.now() - S._warmAt < 120000) return;
+  S._warmAt = Date.now();
+  call({ action: 'ping' }).catch(function () {});
+}
 function doLogin(e) {
   e.preventDefault();
   var pw = $('pw').value, vol = $('volname').value.trim().slice(0, 40);
@@ -322,22 +328,26 @@ function doLogin(e) {
     if (!r.ok) { $('loginerr').innerHTML = '<div class="banner bad">' + esc(r.error) + '</div>'; b.disabled = false; b.textContent = 'Enter'; $('pw').select(); return; }
     S.token = r.token; S.role = r.role; S.vol = vol;
     store.set('token', S.token); store.set('role', S.role); store.set('vol', vol);
-    bootstrap(true).then(function () { if (S.view !== 'entry') setView('checkin'); processQueue(); }); // a scanned QR link may have opened a participant
+    b.textContent = 'Loading participants…';
+    // The login answer already carries the roster (one trip); older servers need a second call.
+    (r.boot && r.boot.ok ? Promise.resolve(applyBoot(r.boot, true)) : bootstrap(true))
+      .then(function () { if (S.view !== 'entry') setView('checkin'); processQueue(); }); // a scanned QR link may have opened a participant
   }).catch(function () {
     $('loginerr').innerHTML = '<div class="banner bad">No connection. Find a signal and try again.</div>'; b.disabled = false; b.textContent = 'Enter';
   });
 }
 
+function applyBoot(r, force) {
+  if (r.code === 'AUTH') return authLost();
+  if (!r.ok) { toast(r.error || 'Could not load participants'); return; }
+  S.role = r.role; store.set('role', S.role);
+  S.cache = { roster: r.roster, settings: r.settings, program: r.program, today: r.today, at: Date.now() };
+  saveCache(); S.online = true;
+  tryPendingCode();
+  if (S.view === 'checkin' && !force) renderResults();
+}
 function bootstrap(force) {
-  return call({ action: 'bootstrap' }).then(function (r) {
-    if (r.code === 'AUTH') return authLost();
-    if (!r.ok) { toast(r.error || 'Could not load participants'); return; }
-    S.role = r.role; store.set('role', S.role);
-    S.cache = { roster: r.roster, settings: r.settings, program: r.program, today: r.today, at: Date.now() };
-    saveCache(); S.online = true;
-    tryPendingCode();
-    if (S.view === 'checkin' && !force) renderResults();
-  }).catch(function () { S.online = false; renderPill(); });
+  return call({ action: 'bootstrap' }).then(function (r) { applyBoot(r, force); }).catch(function () { S.online = false; renderPill(); });
 }
 
 function authLost() {
