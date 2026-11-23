@@ -586,7 +586,7 @@ function confirmSave() {
   var done = function (state, t) {
     delete S.saving[txn.id];
     var showing = S.view === 'success' && S.last && S.last.t.id === txn.id;
-    if (showing) { S.last = { t: Object.assign(S.last.t, t || {}), synced: state === 'synced', state: state, draft: draft }; render(); if (state !== 'failed') startCountdown(); }
+    if (showing) { S.last = { t: Object.assign(S.last.t, t || {}), synced: state === 'synced', state: state, draft: draft, error: S.last.error, limit: S.last.limit }; render(); if (state !== 'failed') startCountdown(); }
     else renderPill();
   };
   call({ action: 'saveCheckin', txn: txn }).then(function (r) {
@@ -600,7 +600,7 @@ function confirmSave() {
     else {
       bootstrap(); // refresh totals from the server
       var showing = S.view === 'success' && S.last && S.last.t.id === txn.id;
-      if (showing) { S.recent = S.recent.filter(function (x) { return x.id !== txn.id; }); store.set('recent', S.recent); S.last.error = r.code === 'OVER_LIMIT' ? 'Another check-in just used up this ' + ((settings().limitScope || 'household').toLowerCase()) + '\'s payout limit.' : (r.error || 'The server refused this check-in.'); S.last.limit = r.limit; done('failed'); }
+      if (showing) { S.recent = S.recent.filter(function (x) { return x.id !== txn.id; }); store.set('recent', S.recent); S.last.error = r.code === 'OVER_LIMIT' ? 'Another phone just used up this ' + ((settings().limitScope || 'household').toLowerCase()) + '\'s payout limit. Tap \u201cBack to this check-in\u201d to pay only what\'s left or get an admin override.' : (r.error || 'The server refused this check-in.'); S.last.limit = r.limit; done('failed'); }
       else {
         // The volunteer already moved on (and has likely paid): record it anyway and flag it for review.
         if (r.code === 'OVER_LIMIT') { queueIt2(); toast('⚠ ' + p.name + ' went over the payout limit — saved and flagged for admin review.', 7000); }
